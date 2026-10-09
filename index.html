@@ -522,7 +522,7 @@ Intentos fallidos previos: 0`,
    cierre: "La auditoría identifica la cuenta y el origen: jperez, por VPN, sin intentos fallidos. La cuenta seguía activa dos meses después de la desvinculación. Falló la administración de cuentas: la baja de accesos debe formar parte del procedimiento de egreso. Gracias a las cuentas individuales pudo atribuirse la acción, y gracias a la copia fuera de línea puede recuperarse." }
 ];
 
-const PODIO_URL = "";
+const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
 function podio() {
   ["inicio", "juego", "final"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
   const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(lista => {
