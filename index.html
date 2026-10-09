@@ -30,13 +30,14 @@
   .diag { margin-top:18px; border-top:2px solid var(--raya); padding-top:14px; }
   .diag b.t { color:var(--marino); font-size:19px; }
   .diag button { display:block; width:100%; text-align:left; font-size:18px; padding:10px 14px; margin-top:8px; background:#fff; border:1.5px solid var(--raya); }
+  .diag button.principal { display:inline-block; width:auto; background:var(--naranja); border:0; font-weight:bold; color:var(--marino); padding:12px 26px; margin-top:14px; }
   .diag button.bien { border-color:#15803D; background:#ECFDF3; font-weight:bold; }
   .diag button.mal { border-color:#B91C1C; background:#FEF2F2; color:var(--gris); }
   .cierre { margin-top:14px; font-size:17px; line-height:1.5; border-left:6px solid var(--naranja); padding:6px 14px; }
   .marcador { font-size:15px; }
   .marcador b { font-size:20px; color:var(--marino); }
-  table { border-collapse:collapse; font-size:19px; margin-top:14px; }
-  td, th { padding:8px 22px 8px 0; text-align:left; border-bottom:1px solid var(--raya); }
+  table { border-collapse:collapse; font-size:17px; margin-top:14px; }
+  td, th { vertical-align:top; padding:8px 22px 8px 0; text-align:left; border-bottom:1px solid var(--raya); }
   .oculto { display:none; }
 </style>
 </head>
@@ -48,17 +49,19 @@
 <main>
 
 <section id="inicio" class="portada">
-  <small>REDES Y COMUNICACIONES · DIAGNÓSTICO</small>
+  <small>REDES Y COMUNICACIONES · DIAGNÓSTICO Y SEGURIDAD</small>
   <h1>Guardia de redes</h1>
-  <h2>Cinco pedidos de soporte</h2>
+  <h2>Pedidos de soporte</h2>
   <ol>
-    <li>Llega un pedido de soporte de una oficina.</li>
-    <li>Se elige qué comando ejecutar y se lee la salida. Cada comando cuesta 10 puntos.</li>
+    <li>Llega un pedido de soporte de una oficina. Hay dos guardias de diez pedidos: redes y seguridad.</li>
+    <li>Se elige qué comando o revisión ejecutar y se lee el resultado. Cada paso cuesta 10 puntos.</li>
     <li>Cuando la causa está clara, se elige el diagnóstico. Un diagnóstico equivocado cuesta 30 puntos.</li>
-    <li>Cada pedido arranca en 100 puntos: gana quien diagnostica con menos comandos.</li>
+    <li>Cada pedido arranca en 100 puntos: rinde más quien diagnostica con menos pasos.</li>
   </ol>
-  <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:320px;border:0;margin-right:10px">
-  <button class="principal" onclick="empezar()">Atender el primer pedido</button>
+  <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:300px;border:0;margin-right:10px">
+  <input id="correo" type="email" placeholder="Correo (opcional)" style="font-size:18px;padding:11px 12px;width:300px;border:0"><br>
+  <button class="principal" onclick="empezar('Redes')" style="margin-right:10px;margin-top:14px">Guardia de redes</button>
+  <button class="principal" onclick="empezar('Seguridad')">Guardia de seguridad</button>
   <p>DS-32 · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
 </section>
 
@@ -80,13 +83,12 @@
 
 <section id="final" class="oculto">
   <div class="etiqueta">Cierre de la guardia</div>
-  <h3>Resultado</h3>
+  <h3 id="rango">Resultado</h3>
   <table id="tabla"></table>
   <p id="comprobante" style="font-family:Menlo,Consolas,monospace;font-size:17px;background:#EEF1F5;padding:12px 14px"></p>
   <p id="aviso" style="color:#6B7280;font-size:15px">Registrando el resultado…</p>
   <div class="cierre">
-    Orden de diagnóstico que queda de la práctica: configuración propia (ipconfig), puerta de enlace, un equipo de la red,
-    una dirección externa, resolución de nombres y, por último, el servicio. Cada paso descarta una capa.
+    La columna «Con qué se veía» indica el paso que alcanzaba para llegar al diagnóstico. Sirve de guía para la puesta en común.
   </div>
 </section>
 
@@ -143,23 +145,46 @@ RemotePort       : 80
 PingSucceeded    : ${ping}
 TcpTestSucceeded : ${tcp}`;
 
-const PEDIDOS = [
- { titulo: "Recepción: «no tengo Internet»",
-   pedido: "La PC de Recepción quedó sin acceso a nada desde que se reinició. Las demás PC de la oficina trabajan con normalidad.",
-   salidas: {
-     "ipconfig /all": `Adaptador de Ethernet Ethernet:
+
+const INTERMITENTE = (ip, t, ttl) => `Haciendo ping a ${ip} con 32 bytes de datos:
+Respuesta desde ${ip}: bytes=32 tiempo=${t} TTL=${ttl}
+Tiempo de espera agotado para esta solicitud.
+Tiempo de espera agotado para esta solicitud.
+Respuesta desde ${ip}: bytes=32 tiempo=${t} TTL=${ttl}
+
+    Paquetes: enviados = 4, recibidos = 2, perdidos = 2 (50% perdidos)`;
+const LENTO = ip => `Haciendo ping a ${ip} con 32 bytes de datos:
+Respuesta desde ${ip}: bytes=32 tiempo=312ms TTL=64
+Tiempo de espera agotado para esta solicitud.
+Respuesta desde ${ip}: bytes=32 tiempo=540ms TTL=64
+Respuesta desde ${ip}: bytes=32 tiempo=95ms TTL=64
+
+    Paquetes: enviados = 4, recibidos = 3, perdidos = 1 (25% perdidos)`;
+const PUERTO2 = (equipo, puerto, ping, tcp) => `ComputerName     : ${equipo}
+RemotePort       : ${puerto}
+PingSucceeded    : ${ping}
+TcpTestSucceeded : ${tcp}`;
+const WIFI = t => t.replace("Adaptador de Ethernet Ethernet", "Adaptador de LAN inalámbrica Wi-Fi");
+const APIPA = (adaptador, ip) => `${adaptador}:
 
    DHCP habilitado . . . . . . . . . . . : sí
-   Dirección IPv4 de configuración automática: 169.254.23.118
+   Dirección IPv4 de configuración automática: ${ip}
    Máscara de subred . . . . . . . . . . : 255.255.0.0
    Puerta de enlace predeterminada . . . :
-   Servidores DNS. . . . . . . . . . . . :`,
+   Servidores DNS. . . . . . . . . . . . :`;
+const SIN_DNS = `DNS request timed out.
+    timeout was 2 seconds.
+*** No se puede encontrar el servidor predeterminado`;
+
+const REDES = [
+ { titulo: "Recepción: «no tengo Internet»", clave: "ipconfig /all",
+   pedido: "La PC de Recepción quedó sin acceso a nada desde que se reinició. Las demás PC de la oficina trabajan con normalidad.",
+   salidas: {
+     "ipconfig /all": APIPA("Adaptador de Ethernet Ethernet", "169.254.23.118"),
      "ping 192.168.1.1   (puerta de enlace)": GENERAL("192.168.1.1"),
      "ping 192.168.1.20   (servidor de la oficina)": GENERAL("192.168.1.20"),
      "ping 8.8.8.8": GENERAL("8.8.8.8"),
-     "nslookup www.ejemplo.com": `DNS request timed out.
-    timeout was 2 seconds.
-*** No se puede encontrar el servidor predeterminado`,
+     "nslookup www.ejemplo.com": SIN_DNS,
      "tracert 8.8.8.8": `Traza a 8.8.8.8 sobre un máximo de 30 saltos:
 
   1  Error en la transmisión: código 1231.
@@ -167,8 +192,8 @@ const PEDIDOS = [
 Traza completa.`,
      "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("False", "False") },
    opciones: ["El servidor DNS no responde.", "El equipo no obtuvo dirección por DHCP y se asignó una por su cuenta.", "El proveedor de Internet tiene una caída.", "El cable de red está desconectado."], ok: 1,
-   cierre: "Una dirección 169.254.x.x indica que el equipo pidió configuración por DHCP y nadie le respondió. Sin dirección válida no tiene puerta de enlace ni DNS: todo lo demás falla en consecuencia. Con el cable desconectado, ipconfig informaría «medios desconectados». Alcanzaba con un solo comando: ipconfig." },
- { titulo: "Contaduría: «no abre ninguna página»",
+   cierre: "Una dirección 169.254.x.x indica que el equipo pidió configuración por DHCP y nadie le respondió. Sin dirección válida no tiene puerta de enlace ni DNS: todo lo demás falla en consecuencia. Con el cable desconectado, ipconfig informaría «medios desconectados»." },
+ { titulo: "Contaduría: «no abre ninguna página»", clave: "ping 8.8.8.8 y nslookup",
    pedido: "En una PC de Contaduría el navegador no abre ningún sitio. El programa de facturación, que se conecta por dirección IP, funciona.",
    salidas: {
      "ipconfig /all": IPCONFIG("192.168.1.34", "255.255.255.0", "192.168.1.1", "192.168.1.250"),
@@ -179,8 +204,8 @@ Traza completa.`,
      "tracert 8.8.8.8": TR_OK,
      "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "True") },
    opciones: ["La puerta de enlace está mal configurada.", "El servidor DNS configurado (192.168.1.250) no responde.", "El proveedor de Internet tiene una caída.", "El firewall bloquea la navegación web."], ok: 1,
-   cierre: "El ping a 8.8.8.8 responde: hay salida a Internet y la puerta de enlace funciona. Lo que falla es la traducción de nombres a direcciones: nslookup agota el tiempo de espera contra 192.168.1.250. La combinación que lo demuestra es ping a 8.8.8.8 (anda) y nslookup (no anda)." },
- { titulo: "Ventas: «veo la impresora, pero no salgo a Internet»",
+   cierre: "El ping a 8.8.8.8 responde: hay salida a Internet y la puerta de enlace funciona. Lo que falla es la traducción de nombres a direcciones: nslookup agota el tiempo de espera contra 192.168.1.250." },
+ { titulo: "Ventas: «veo la impresora, pero no salgo a Internet»", clave: "ipconfig /all y ping a la puerta de enlace",
    pedido: "A una notebook de Ventas se le cargó la configuración de red a mano. Imprime y accede al servidor de la oficina, pero no llega a nada externo. El resto navega sin problemas.",
    salidas: {
      "ipconfig /all": IPCONFIG("192.168.1.40", "255.255.255.0", "192.168.1.254", "8.8.8.8", "no"),
@@ -192,7 +217,7 @@ Traza completa.`,
      "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "True") },
    opciones: ["El servidor DNS externo tiene una caída.", "La máscara de subred es incorrecta.", "La puerta de enlace configurada no existe en la red.", "El switch de la oficina presenta una falla."], ok: 2,
    cierre: "El equipo se comunica con su red (el servidor responde), de modo que cable, switch, dirección y máscara están bien. La puerta de enlace cargada, 192.168.1.254, no responde: el router de la oficina es 192.168.1.1. El DNS falla como consecuencia, porque es externo y no hay por dónde salir." },
- { titulo: "Administración: «la PC nueva no ve al servidor»",
+ { titulo: "Administración: «la PC nueva no ve al servidor»", clave: "ipconfig /all",
    pedido: "Se instaló una PC nueva en Administración con configuración manual. No accede al servidor ni a Internet. El resto de la oficina trabaja con normalidad.",
    salidas: {
      "ipconfig /all": IPCONFIG("192.168.1.130", "255.255.255.128", "192.168.1.1", "192.168.1.1", "no"),
@@ -204,7 +229,7 @@ Traza completa.`,
      "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("False", "False") },
    opciones: ["El servidor de la oficina está apagado.", "El cable de red de la PC está dañado.", "El servidor DHCP no respondió.", "La máscara deja al equipo en otra subred, distinta de la del servidor y del router."], ok: 3,
    cierre: "Con la máscara 255.255.255.128 (/25), la dirección 192.168.1.130 pertenece a la subred de .128 a .255. El servidor (.20) y el router (.1) quedan en la otra mitad: el equipo los considera de otra red y no tiene una puerta de enlace alcanzable. La red de la oficina es /24: corresponde 255.255.255.0." },
- { titulo: "Toda la oficina: «no abre la intranet»",
+ { titulo: "Toda la oficina: «no abre la intranet»", clave: "Test-NetConnection al puerto 80",
    pedido: "Nadie puede abrir la intranet (http://192.168.1.20). Internet y el correo funcionan en todas las PC.",
    salidas: {
      "ipconfig /all": IPCONFIG("192.168.1.34", "255.255.255.0", "192.168.1.1", "192.168.1.1"),
@@ -215,24 +240,292 @@ Traza completa.`,
      "tracert 8.8.8.8": TR_OK,
      "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "False") },
    opciones: ["El servicio web del servidor está detenido o su puerto 80 está bloqueado.", "El servidor DNS no responde.", "El cable de red del servidor está desconectado.", "La puerta de enlace está mal configurada."], ok: 0,
-   cierre: "El servidor responde al ping: la red llega hasta él. Lo que no responde es el puerto 80, donde atiende el servicio web. Que un equipo responda al ping no significa que su servicio esté en funcionamiento: el problema ya no es de red, es del servidor (servicio detenido o firewall del propio equipo)." }
+   cierre: "El servidor responde al ping: la red llega hasta él. Lo que no responde es el puerto 80, donde atiende el servicio web. Que un equipo responda al ping no significa que su servicio esté en funcionamiento: el problema ya no es de red, es del servidor." },
+ { titulo: "Depósito: «la conexión se corta a cada rato»", clave: "arp -a o el visor de eventos",
+   pedido: "La PC del Depósito pierde la conexión de a ratos desde ayer, cuando se instaló una impresora de red nueva con configuración manual.",
+   salidas: {
+     "ipconfig /all": IPCONFIG("192.168.1.50", "255.255.255.0", "192.168.1.1", "192.168.1.1", "no") + "\n   Dirección física. . . . . . . . . . . : 3C-52-82-1A-9F-10",
+     "ping 192.168.1.1   (puerta de enlace)": INTERMITENTE("192.168.1.1", "1ms", 64),
+     "ping 8.8.8.8": INTERMITENTE("8.8.8.8", "18ms", 117),
+     "arp -a   (desde el servidor de la oficina)": `Interfaz: 192.168.1.20 --- 0x4
+  Dirección de Internet    Dirección física      Tipo
+  192.168.1.1              a4-91-b1-00-2c-01     dinámico
+  192.168.1.34             3c-52-82-1a-77-0b     dinámico
+  192.168.1.50             00-1b-a9-7e-44-d2     dinámico`,
+     "nslookup www.ejemplo.com": NS_OK("192.168.1.1"),
+     "Visor de eventos del sistema": `Origen: Tcpip    Id. de evento: 4199
+El sistema detectó un conflicto de direcciones para la dirección IP 192.168.1.50
+con el sistema que tiene la dirección de hardware de red 00-1B-A9-7E-44-D2.` },
+   opciones: ["El cable de red de la PC está dañado.", "Dos equipos usan la misma dirección IP: la PC y la impresora nueva.", "El router está saturado.", "El servidor DNS responde de manera intermitente."], ok: 1,
+   cierre: "La tabla ARP del servidor asocia 192.168.1.50 con una dirección física que no es la de la PC (3C-52-82-1A-9F-10): otro equipo responde por esa IP. El visor de eventos lo confirma. La impresora se configuró a mano con una dirección ya utilizada: corresponde asignarle otra." },
+ { titulo: "Gerencia: «de golpe no anda nada»", clave: "ipconfig /all",
+   pedido: "La PC de Gerencia quedó sin red después de que se reacomodaron los escritorios. Las demás trabajan con normalidad.",
+   salidas: {
+     "ipconfig /all": `Adaptador de Ethernet Ethernet:
+
+   Estado de los medios. . . . . . . . . : medios desconectados
+   Sufijo DNS específico para la conexión :`,
+     "ping 192.168.1.1   (puerta de enlace)": GENERAL("192.168.1.1"),
+     "ping 192.168.1.20   (servidor de la oficina)": GENERAL("192.168.1.20"),
+     "ping 8.8.8.8": GENERAL("8.8.8.8"),
+     "nslookup www.ejemplo.com": SIN_DNS,
+     "Revisar el puerto del switch donde conecta la PC": `Puerto 14: sin enlace (indicador apagado)` },
+   opciones: ["El servidor DHCP no respondió.", "El enlace físico está caído: cable desconectado o dañado.", "La dirección IP está duplicada.", "El firewall del equipo bloquea el tráfico."], ok: 1,
+   cierre: "«Medios desconectados» indica que la placa no detecta enlace: es un problema de capa física, anterior a cualquier configuración. Con DHCP sin respuesta habría enlace y una dirección 169.254.x.x. El puerto del switch sin indicador lo confirma: se revisa el cable y sus dos extremos." },
+ { titulo: "Sala de reuniones: «las videollamadas se cortan»", clave: "ping a la puerta de enlace y netsh wlan",
+   pedido: "En la sala de reuniones las videollamadas se entrecortan con cualquier notebook. En los escritorios, con cable, no hay inconvenientes.",
+   salidas: {
+     "ipconfig /all": WIFI(IPCONFIG("192.168.1.87", "255.255.255.0", "192.168.1.1", "192.168.1.1")),
+     "ping 192.168.1.1   (puerta de enlace)": LENTO("192.168.1.1"),
+     "ping 8.8.8.8": LENTO("8.8.8.8"),
+     "netsh wlan show interfaces": `    SSID                          : Oficina
+    Tipo de radio                 : 802.11n
+    Canal                         : 6
+    Velocidad de recepción (Mbps) : 13
+    Señal                         : 24%`,
+     "nslookup www.ejemplo.com": NS_OK("192.168.1.1"),
+     "ping 192.168.1.1   (desde una PC con cable)": OK("192.168.1.1", "=1ms", 64) },
+   opciones: ["El proveedor de Internet entrega menos ancho de banda del contratado.", "La señal inalámbrica llega débil a la sala.", "El servidor DNS responde con demora.", "El router no admite más equipos conectados."], ok: 1,
+   cierre: "La demora y la pérdida aparecen ya en el ping a la puerta de enlace, es decir, dentro de la propia red: el proveedor no interviene. La interfaz informa 24 % de señal y, con cable, el mismo ping responde en 1 ms. Se resuelve sumando o acercando un punto de acceso." },
+ { titulo: "Dirección: «desde casa no puedo ver las cámaras»", clave: "la tabla de redirección de puertos del router",
+   pedido: "El grabador de cámaras (192.168.1.60, puerto 8080) se ve desde cualquier PC de la oficina, pero no desde afuera.",
+   salidas: {
+     "Test-NetConnection 192.168.1.60 -Port 8080   (desde la oficina)": PUERTO2("192.168.1.60", 8080, "True", "True"),
+     "Test-NetConnection 203.0.113.23 -Port 8080   (desde afuera)": PUERTO2("203.0.113.23", 8080, "True", "False"),
+     "ping 203.0.113.23   (desde afuera)": OK("203.0.113.23", "=22ms", 54),
+     "ipconfig /all   (en el grabador)": IPCONFIG("192.168.1.60", "255.255.255.0", "192.168.1.1", "192.168.1.1", "no"),
+     "Router: estado de la conexión": `Dirección IP pública (WAN) : 203.0.113.23
+Estado                     : conectado`,
+     "Router: tabla de redirección de puertos": `Redirección de puertos (NAT)
+  Puerto externo   IP interna   Puerto interno   Estado
+  (sin reglas configuradas)` },
+   opciones: ["El grabador tiene mal configurada la puerta de enlace.", "El proveedor de Internet bloquea el puerto 8080.", "Falta la redirección del puerto en el router.", "El servidor DNS no resuelve el nombre del grabador."], ok: 2,
+   cierre: "Desde adentro el servicio responde: el grabador funciona. Desde afuera el router responde al ping, pero nadie atiende el puerto 8080: el router no sabe a qué equipo interno entregar esa conexión. Falta una regla de redirección hacia 192.168.1.60:8080. Publicar un equipo lo expone a Internet: conviene restringir el acceso o utilizar una VPN." },
+ { titulo: "Capacitación: «las últimas notebooks no se conectan»", clave: "el estado del servidor DHCP en el router",
+   pedido: "Llegaron doce notebooks para un curso. Las primeras se conectaron al Wi-Fi sin problemas; las últimas cuatro no obtienen red. Las PC de siempre funcionan.",
+   salidas: {
+     "ipconfig /all   (en una notebook sin red)": APIPA("Adaptador de LAN inalámbrica Wi-Fi", "169.254.80.12"),
+     "ipconfig /renew   (en una notebook sin red)": `Error al renovar la interfaz Wi-Fi: no se puede establecer contacto con el
+servidor DHCP. Se agotó el tiempo de espera de la solicitud.`,
+     "ipconfig /all   (en una notebook que sí conectó)": WIFI(IPCONFIG("192.168.1.119", "255.255.255.0", "192.168.1.1", "192.168.1.1")),
+     "netsh wlan show interfaces   (en una notebook sin red)": `    SSID                          : Oficina
+    Estado                        : conectado
+    Señal                         : 88%`,
+     "ping 192.168.1.1   (desde una notebook que sí conectó)": OK("192.168.1.1", "=2ms", 64),
+     "Router: estado del servidor DHCP": `Servidor DHCP            : activo
+Rango de direcciones     : 192.168.1.100 a 192.168.1.120
+Direcciones asignadas    : 21 de 21
+Duración de la concesión : 8 días` },
+   opciones: ["El servidor DHCP está apagado.", "La señal inalámbrica no alcanza a las últimas notebooks.", "El rango de direcciones del DHCP está agotado.", "Las notebooks nuevas tienen una dirección IP fija."], ok: 2,
+   cierre: "El servidor DHCP está activo, pero su rango tiene 21 direcciones y las 21 están asignadas: las notebooks que llegan después no reciben ninguna y se asignan una 169.254.x.x. La señal es buena (88 %). Se amplía el rango o se reduce la duración de la concesión." }
 ];
 
-let i = 0, puntos = 0, total = 0, resuelto = false, resultados = [];
+const SEGURIDAD = [
+ { titulo: "Tesorería: «el banco me pide validar la cuenta»", clave: "ver a dónde apunta el enlace", prompt: "> ",
+   pedido: "Una empleada de Tesorería recibió un correo del banco que solicita validar la cuenta dentro de las 24 horas mediante un enlace. Consulta antes de hacer clic.",
+   salidas: {
+     "Ver el remitente completo": `De:     Banco del Litoral <avisos@bancodellitoral-validacion.com>
+Para:   tesoreria@oficina.example
+Asunto: URGENTE: validación de cuenta - 24 hs`,
+     "Ver a dónde apunta el enlace": `Texto visible : https://www.bancodellitoral.example/validar
+Destino real  : https://bancodellitoral.example.validar-cuenta.net/login`,
+     "Ver las cabeceras del correo": `Received: from mail.validar-cuenta.net (198.51.100.77)
+Authentication-Results: spf=fail  dkim=none  dmarc=fail`,
+     "whois validar-cuenta.net": `Dominio           : validar-cuenta.net
+Fecha de registro : hace 3 días
+Registrante       : datos protegidos`,
+     "Ver el certificado del sitio de destino": `Emitido para : bancodellitoral.example.validar-cuenta.net
+Emitido por  : autoridad de certificación gratuita
+Estado       : válido (el navegador muestra el candado)`,
+     "Analizar la PC con el antivirus": `Sin amenazas detectadas.` },
+   opciones: ["El correo es legítimo: el sitio de destino tiene candado.", "Es phishing: el dominio del enlace no es el del banco.", "La PC de la empleada tiene un virus.", "El banco sufrió una intrusión y está avisando a sus clientes."], ok: 1,
+   cierre: "El dato verificable es el dominio: el enlace termina en validar-cuenta.net, registrado hace tres días, y no en el dominio del banco. El candado no prueba la identidad: cualquier sitio obtiene un certificado para su propio dominio. SPF y DMARC fallidos confirman que el correo no salió de los servidores del banco." },
+ { titulo: "Servidor de archivos: «anoche alguien entró»", clave: "tail de auth.log", prompt: "$ ",
+   pedido: "El servidor Linux de la oficina amaneció con una cuenta de usuario que nadie creó. Tiene el servicio SSH publicado a Internet.",
+   salidas: {
+     "sudo tail -5 /var/log/auth.log": `02:13:55 sshd: Failed password for admin from 203.0.113.50 port 51122
+02:13:57 sshd: Failed password for admin from 203.0.113.50 port 51140
+02:13:59 sshd: Failed password for admin from 203.0.113.50 port 51163
+02:14:01 sshd: Accepted password for admin from 203.0.113.50 port 51181
+02:15:20 useradd: new user: name=soporte2, UID=1004`,
+     "Contar los intentos fallidos por dirección IP": `   4809 203.0.113.50
+      3 192.168.1.34`,
+     "last -n 3": `admin    pts/0    203.0.113.50     jue 02:14 - 02:31  (00:17)
+admin    pts/0    192.168.1.34     mié 17:02 - 17:40  (00:38)`,
+     "grep -E 'PasswordAuthentication|PermitRootLogin|MaxAuthTries' /etc/ssh/sshd_config": `PasswordAuthentication yes
+PermitRootLogin yes
+#MaxAuthTries 6`,
+     "sudo ss -tlnp": `LISTEN   0.0.0.0:22     sshd
+LISTEN   0.0.0.0:445    smbd`,
+     "Analizar el servidor con el antivirus": `Sin amenazas detectadas.` },
+   opciones: ["Un empleado olvidó su contraseña y la probó muchas veces.", "Hubo intentos de ingreso, pero ninguno tuvo éxito.", "Un ataque de fuerza bruta acertó la contraseña de la cuenta admin.", "Una falla del servicio SSH creó la cuenta por error."], ok: 2,
+   cierre: "Más de 4.800 intentos fallidos desde una misma dirección externa y, al final, un «Accepted password»: la contraseña fue adivinada. Un minuto después se creó la cuenta soporte2 para conservar el acceso. Medidas: ingreso por clave pública en lugar de contraseña, límite de intentos y no publicar SSH sin filtrado." },
+ { titulo: "Tienda en línea: «aparecieron productos con precio cero»", clave: "el registro de accesos del servidor web", prompt: "$ ",
+   pedido: "El sitio de ventas muestra productos con el precio en cero. Se solicita revisar qué ocurrió en el servidor.",
+   salidas: {
+     "tail -5 /var/log/nginx/access.log": `198.51.100.9 "GET /producto?id=12" 200 5120
+198.51.100.9 "GET /producto?id=12%27" 500 310
+198.51.100.9 "GET /producto?id=12 OR 1=1--" 200 88412
+198.51.100.9 "GET /producto?id=12 UNION SELECT usuario,clave FROM usuarios--" 200 9544
+198.51.100.9 "GET /producto?id=12;UPDATE productos SET precio=0--" 200 5120`,
+     "tail -1 /var/log/app/error.log": `SQLSTATE[42000]: error de sintaxis en la línea 1
+consulta: SELECT * FROM productos WHERE id = 12'     (sobra una comilla)`,
+     "Ver el código que arma la consulta": `$sql = "SELECT * FROM productos WHERE id = " . $_GET["id"];`,
+     "curl -I https://tienda.example": `HTTP/2 200
+server: nginx
+strict-transport-security: max-age=31536000`,
+     "Revisar los ingresos al panel de administración": `Sin ingresos fuera del horario habitual. Sin intentos fallidos.`,
+     "Consultar al personal de carga de precios": `Nadie modificó precios en la última semana.` },
+   opciones: ["Un ataque de fuerza bruta al panel de administración.", "Una inyección SQL a través del parámetro id.", "Una denegación de servicio.", "Un error del personal al cargar los precios."], ok: 1,
+   cierre: "El registro muestra la secuencia típica: una comilla (%27) que provoca un error 500, luego OR 1=1, un UNION SELECT sobre la tabla de usuarios y un UPDATE de precios. El código concatena el parámetro dentro de la consulta. La corrección son las consultas parametrizadas. HTTPS no interviene: el ataque viaja dentro del canal cifrado." },
+ { titulo: "Administración: «todas las páginas dan error de certificado»", clave: "arp -a", prompt: "C:\\> ",
+   pedido: "Desde esta mañana varias PC muestran advertencias de certificado al entrar al home banking. Ayer un visitante conectó su notebook a la red de la oficina.",
+   salidas: {
+     "arp -a": `Interfaz: 192.168.1.34 --- 0x4
+  Dirección de Internet    Dirección física      Tipo
+  192.168.1.1              00-0c-29-5e-77-a1     dinámico
+  192.168.1.20             d4-be-d9-10-22-3f     dinámico
+  192.168.1.66             00-0c-29-5e-77-a1     dinámico`,
+     "Leer la etiqueta del router": `Dirección MAC: A4-91-B1-00-2C-01`,
+     "tracert 8.8.8.8": `Traza a 8.8.8.8 sobre un máximo de 30 saltos:
+
+  1     2 ms     2 ms     2 ms  192.168.1.66
+  2     3 ms     3 ms     3 ms  192.168.1.1
+  3    19 ms    18 ms    19 ms  8.8.8.8
+
+Traza completa.`,
+     "Ver el certificado que presenta el sitio": `Emitido para : homebanking.banco.example
+Emitido por  : «Proxy CA» (emisor desconocido)
+Estado       : no es de confianza`,
+     "ipconfig /all": IPCONFIG("192.168.1.34", "255.255.255.0", "192.168.1.1", "192.168.1.1"),
+     "Ver la fecha y la hora del equipo": `Fecha y hora correctas, sincronizadas.` },
+   opciones: ["El certificado del banco venció.", "La fecha y la hora de las PC están mal configuradas.", "Un equipo de la red se hace pasar por la puerta de enlace.", "El servidor DNS del proveedor fue alterado."], ok: 2,
+   cierre: "En la tabla ARP, la puerta de enlace (192.168.1.1) figura con la misma dirección física que el equipo 192.168.1.66, y no con la del router. El tráfico pasa primero por ese equipo, como muestra tracert: es una suplantación ARP, y el intermediario presenta un certificado propio. Nunca debe aceptarse la advertencia del navegador." },
+ { titulo: "Ventas: «mis clientes reciben correos que yo no mandé»", clave: "el historial de accesos a la cuenta", prompt: "> ",
+   pedido: "Desde la cuenta de correo de un vendedor salieron mensajes con facturas falsas dirigidos a sus clientes.",
+   salidas: {
+     "Historial de accesos a la cuenta": `08/10 03:12  ingreso correcto  198.51.100.201 (otro país)  navegador desconocido
+07/10 09:02  ingreso correcto  red de la oficina
+Intentos fallidos en los últimos 30 días: 0`,
+     "Consultar la dirección en filtraciones conocidas": `La dirección figura en 1 filtración: foro de compraventa (2025).
+Datos expuestos: correo y contraseña.`,
+     "Estado de la verificación en dos pasos": `Verificación en dos pasos: desactivada`,
+     "Revisar las reglas del buzón": `Regla «.»: reenviar todo lo recibido a pagos@correo-externo.example
+           y mover el original a Eliminados`,
+     "Analizar la PC con el antivirus": `Sin amenazas detectadas.`,
+     "Consultar al usuario": `«Uso la misma contraseña en todos lados, así no me la olvido.»` },
+   opciones: ["Un ataque de fuerza bruta contra la cuenta.", "Un virus en la PC del vendedor.", "El ingreso con una contraseña filtrada en otro sitio, que el usuario reutilizaba.", "Una falla del proveedor de correo."], ok: 2,
+   cierre: "No hay intentos fallidos: quien ingresó ya conocía la contraseña. La dirección figura en una filtración y el usuario reutilizaba la clave. La regla de reenvío permite conservar el acceso aun después del cambio de contraseña: hay que eliminarla, cambiar la clave, cerrar las sesiones abiertas y activar la verificación en dos pasos." },
+ { titulo: "Contaduría: «los archivos no abren y cambiaron de nombre»", clave: "el listado de la carpeta y el último adjunto abierto", prompt: "C:\\> ",
+   pedido: "Esta mañana ningún archivo de la carpeta compartida de Contaduría se puede abrir.",
+   salidas: {
+     "dir \\\\servidor\\contaduria": `balance-2026.xlsx.locked
+sueldos-09.xlsx.locked
+proveedores.docx.locked
+LEEME-PARA-RECUPERAR.txt`,
+     "type LEEME-PARA-RECUPERAR.txt": `Sus archivos fueron cifrados. Para recuperarlos debe realizar un pago
+dentro de las 72 horas. No apague el equipo.`,
+     "tasklist   (en la PC desde donde empezó)": `Nombre         PID    CPU    Ubicación
+svch0st.exe    4412   87 %   C:\\Users\\cont1\\AppData\\Local\\Temp`,
+     "Revisar el último adjunto abierto en esa PC": `Ayer 16:40 — Factura_A-0001.pdf.exe`,
+     "Revisar la unidad de respaldo": `Disco USB conectado al servidor: todos los archivos con extensión .locked`,
+     "Revisar el estado del disco del servidor": `SMART: sin errores.` },
+   opciones: ["Una falla física del disco del servidor.", "Un ransomware que ingresó por un adjunto de correo.", "Una actualización del sistema que quedó incompleta.", "Un borrado accidental de un usuario."], ok: 1,
+   cierre: "Extensión agregada a todos los archivos, nota de rescate y un proceso desconocido en ejecución: es un ransomware, que ingresó con un adjunto de doble extensión (.pdf.exe). El respaldo estaba conectado al mismo servidor y también quedó cifrado: solo una copia fuera de línea permite recuperar. Primera medida: aislar el equipo de la red." },
+ { titulo: "Sitio institucional: «alguien leyó archivos del servidor»", clave: "la versión del servidor y el registro de accesos", prompt: "$ ",
+   pedido: "El proveedor de alojamiento avisa de pedidos anómalos contra el sitio institucional, que es un sitio estático.",
+   salidas: {
+     "curl -I http://sitio.example": `HTTP/1.1 200 OK
+Server: Apache/2.4.49 (Unix)`,
+     "tail -2 /var/log/apache2/access.log": `192.0.2.77 "GET /cgi-bin/.%2e/.%2e/.%2e/.%2e/etc/passwd" 200 1843
+192.0.2.77 "GET /cgi-bin/.%2e/.%2e/.%2e/.%2e/etc/shadow" 403 199`,
+     "Buscar la versión en el catálogo de vulnerabilidades": `Apache HTTP Server 2.4.49 — CVE-2021-41773
+Recorrido de directorios: permite leer archivos fuera de la carpeta del sitio.
+Corregida en versiones posteriores.`,
+     "apt list --upgradable": `apache2: hay una versión más nueva disponible
+Última actualización del sistema: hace 26 meses`,
+     "Revisar los ingresos por SSH": `Sin ingresos fuera de lo habitual.`,
+     "Revisar el código del sitio": `Sitio estático: sin formularios ni base de datos.` },
+   opciones: ["Una inyección SQL en un formulario.", "La explotación de una vulnerabilidad conocida, en una versión sin actualizar.", "Un ingreso por SSH con una contraseña adivinada.", "Una denegación de servicio."], ok: 1,
+   cierre: "El servidor informa su versión a quien la consulte, y esa versión tiene una vulnerabilidad publicada. El registro muestra el pedido exacto que la aprovecha, con respuesta 200: el archivo fue entregado. No hay base de datos ni formularios, de modo que no puede ser una inyección SQL. La corrección es actualizar; ocultar la versión solo reduce la exposición." },
+ { titulo: "Sistema de turnos: «la base de datos está lenta»", clave: "ss -tlnp y el estado del firewall", prompt: "$ ",
+   pedido: "El sistema de turnos responde con demora desde hace dos días. El servidor aloja el sitio y la base de datos.",
+   salidas: {
+     "sudo ss -tlnp": `LISTEN   0.0.0.0:3306     mysqld
+LISTEN   0.0.0.0:443      nginx
+LISTEN   127.0.0.1:6379   redis-server`,
+     "sudo ufw status": `Estado: inactivo`,
+     "tail -3 /var/log/mysql/error.log": `Access denied for user 'root'@'198.51.100.14'
+Access denied for user 'admin'@'203.0.113.9'
+Access denied for user 'root'@'192.0.2.200'
+(2.300 entradas similares en la última hora)`,
+     "Probar el puerto 3306 desde afuera": PUERTO2("turnos.example", 3306, "True", "True"),
+     "top": `PID    USUARIO   %CPU   ORDEN
+1180   mysql     91.0   mysqld`,
+     "Revisar el registro del sitio web": `Cantidad de visitas dentro de lo habitual.` },
+   opciones: ["El sitio recibe más visitas de lo habitual.", "El servidor de base de datos está publicado a Internet y recibe intentos de ingreso.", "El disco del servidor está por llenarse.", "Una inyección SQL desde el sitio."], ok: 1,
+   cierre: "MySQL escucha en 0.0.0.0 y no hay firewall activo: cualquiera llega al puerto 3306 desde Internet, y los rechazos provienen de direcciones de todo el mundo. La base solo debe atender a la aplicación: se la hace escuchar en 127.0.0.1 o en la red interna y se filtra el puerto. Redis, en cambio, está bien: escucha solo en 127.0.0.1." },
+ { titulo: "Recepción: «el Wi-Fi me pidió la clave del correo»", clave: "netsh wlan show networks mode=bssid", prompt: "C:\\> ",
+   pedido: "Una empleada se conectó a la red Wi-Fi «Oficina» y, al abrir el navegador, una página le solicitó el usuario y la clave del correo.",
+   salidas: {
+     "netsh wlan show networks mode=bssid": `SSID 1 : Oficina
+    Autenticación : WPA2-Personal
+    BSSID 1       : a4:91:b1:00:2c:02      Señal: 61%
+SSID 2 : Oficina
+    Autenticación : Abierta
+    BSSID 1       : 02:1a:11:f3:9c:5e      Señal: 97%`,
+     "netsh wlan show interfaces": `    SSID          : Oficina
+    BSSID         : 02:1a:11:f3:9c:5e
+    Autenticación : Abierta`,
+     "ipconfig /all": WIFI(IPCONFIG("10.0.0.23", "255.255.255.0", "10.0.0.1", "10.0.0.1")),
+     "nslookup correo.oficina.example": `Servidor:  UnKnown
+Address:  10.0.0.1
+
+Nombre:   correo.oficina.example
+Address:  10.0.0.1`,
+     "Ver la dirección de la página que pidió la clave": `http://10.0.0.1/login      (sin candado)`,
+     "Leer la etiqueta del punto de acceso de la oficina": `BSSID: A4:91:B1:00:2C:02` },
+   opciones: ["El router de la oficina se reinició y perdió la contraseña.", "Un punto de acceso falso que imita el nombre de la red.", "El servidor de correo fue alterado.", "La notebook tiene un virus."], ok: 1,
+   cierre: "Hay dos redes con el mismo nombre: la de la oficina, con WPA2, y otra abierta, con más señal y un identificador (BSSID) que no es el del equipo de la oficina. La notebook se conectó a la falsa, que entrega su propio DNS y responde por cualquier nombre con una página que pide credenciales. La contraseña ingresada debe cambiarse de inmediato." },
+ { titulo: "Recursos Humanos: «borraron la carpeta de legajos»", clave: "el registro de auditoría del servidor", prompt: "> ",
+   pedido: "Anoche se eliminó una carpeta del servidor de archivos. Nadie de la oficina reconoce haberlo hecho.",
+   salidas: {
+     "Registro de auditoría del servidor de archivos": `07/10 23:48  usuario: jperez  acción: eliminar  \\\\servidor\\rrhh\\legajos
+             origen: 10.8.0.14 (VPN)`,
+     "Listar las cuentas de usuario": `jperez    estado: activa    último cambio de contraseña: hace 410 días`,
+     "Consultar a Recursos Humanos por jperez": `Dejó de trabajar en la organización hace dos meses.`,
+     "Registro de conexiones de la VPN": `07/10 23:41  jperez  conectado desde 198.51.100.60
+07/10 23:55  jperez  desconectado
+Intentos fallidos previos: 0`,
+     "Analizar el servidor con el antivirus": `Sin amenazas detectadas.`,
+     "Revisar la copia de respaldo": `Última copia: 07/10 22:00, fuera de línea. La carpeta puede restaurarse.` },
+   opciones: ["Un ransomware.", "Un ataque de fuerza bruta contra la VPN.", "El acceso de un ex empleado cuya cuenta no se dio de baja.", "Una falla del disco del servidor."], ok: 2,
+   cierre: "La auditoría identifica la cuenta y el origen: jperez, por VPN, sin intentos fallidos. La cuenta seguía activa dos meses después de la desvinculación. Falló la administración de cuentas: la baja de accesos debe formar parte del procedimiento de egreso. Gracias a las cuentas individuales pudo atribuirse la acción, y gracias a la copia fuera de línea puede recuperarse." }
+];
+
+const MODULOS = { "Redes": REDES, "Seguridad": SEGURIDAD };
+let PEDIDOS = REDES, modulo = "Redes", inicio = 0;
+let i = 0, puntos = 0, total = 0, resuelto = false, resultados = [], alumno = "", correo = "";
 const $ = id => document.getElementById(id);
 const ver = (id, si) => $(id).classList.toggle("oculto", !si);
+const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const mezclar = a => { for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; };
 
 function marcador() {
-  $("marcador").innerHTML = `Pedido ${Math.min(i + 1, PEDIDOS.length)} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
+  $("marcador").innerHTML = `${esc(modulo)} · pedido ${Math.min(i + 1, PEDIDOS.length)} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
 }
-let alumno = "";
-function empezar() { alumno = $("nombre").value.trim(); if (!alumno) { $("nombre").focus(); return; } ver("inicio", false); ver("juego", true); cargar(); }
+function empezar(m) {
+  alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
+  if (!alumno) { $("nombre").focus(); return; }
+  modulo = m; PEDIDOS = MODULOS[m]; inicio = Date.now();
+  ver("inicio", false); ver("juego", true); cargar();
+}
 function cargar() {
-  const p = PEDIDOS[i]; puntos = 100; resuelto = false;
-  $("numero").textContent = `Pedido ${i + 1}`;
+  const p = PEDIDOS[i]; const pr = p.prompt || "C:\\> "; puntos = 100; resuelto = false;
+  $("numero").textContent = `${modulo} · pedido ${i + 1} de ${PEDIDOS.length}`;
   $("titulo").textContent = p.titulo;
   $("pedido").textContent = p.pedido;
-  $("terminal").textContent = "C:\\> ";
+  $("terminal").textContent = pr;
   $("comandos").innerHTML = ""; $("opciones").innerHTML = "";
   ver("cierre", false); ver("siguiente", false);
   Object.keys(p.salidas).forEach(cmd => {
@@ -240,16 +533,16 @@ function cargar() {
     b.onclick = () => {
       if (!b.classList.contains("usado") && !resuelto) { puntos = Math.max(0, puntos - 10); b.classList.add("usado"); }
       const t = $("terminal"); const limpio = cmd.replace(/\s+\(.*\)$/, "");
-      t.innerHTML += `<span class="c">${limpio}</span>\n\n${p.salidas[cmd]}\n\nC:\\> `;
+      t.innerHTML += `<span class="c">${esc(limpio)}</span>\n\n${esc(p.salidas[cmd])}\n\n${esc(pr)}`;
       t.scrollTop = t.scrollHeight; marcador();
     };
     $("comandos").appendChild(b);
   });
-  p.opciones.forEach((texto, k) => {
-    const b = document.createElement("button"); b.textContent = "abcd"[k] + ")  " + texto;
+  mezclar(p.opciones.map((texto, k) => ({ texto, bien: k === p.ok }))).forEach((o, k) => {
+    const b = document.createElement("button"); b.textContent = "abcd"[k] + ")  " + o.texto;
     b.onclick = () => {
       if (resuelto) return;
-      if (k === p.ok) {
+      if (o.bien) {
         resuelto = true; b.classList.add("bien"); total += puntos; resultados.push(puntos);
         $("cierre").textContent = p.cierre; ver("cierre", true);
         $("siguiente").textContent = i + 1 < PEDIDOS.length ? "Siguiente pedido" : "Ver el resultado";
@@ -264,16 +557,20 @@ function cargar() {
 function siguiente() {
   i++;
   if (i < PEDIDOS.length) { cargar(); window.scrollTo(0, 0); return; }
-  ver("juego", false); ver("final", true);
-  $("tabla").innerHTML = "<tr><th>Pedido</th><th>Puntos</th></tr>" +
-    PEDIDOS.map((p, k) => `<tr><td>${k + 1}. ${p.titulo}</td><td>${resultados[k]}</td></tr>`).join("") +
-    `<tr><th>Total</th><th>${total} de ${PEDIDOS.length * 100}</th></tr>`;
+  const maximo = PEDIDOS.length * 100, minutos = Math.max(1, Math.round((Date.now() - inicio) / 60000));
+  const pct = total / maximo;
+  const rango = pct >= 0.9 ? "Jefe de guardia" : pct >= 0.75 ? "Administrador de red" : pct >= 0.55 ? "Técnico de soporte" : "Pasante";
+  ver("juego", false); ver("final", true); window.scrollTo(0, 0);
+  $("rango").textContent = `${rango} · ${total} de ${maximo} puntos · ${minutos} min`;
+  $("tabla").innerHTML = "<tr><th>Pedido</th><th>Puntos</th><th>Con qué se veía</th></tr>" +
+    PEDIDOS.map((p, k) => `<tr><td>${k + 1}. ${esc(p.titulo)}</td><td>${resultados[k]}</td><td>${esc(p.clave)}</td></tr>`).join("");
   $("marcador").innerHTML = `Total: <b>${total}</b>`;
-  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total), "entry.1812026381": resultados.join(" + ") });
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
+    "entry.1812026381": `${modulo} | ${resultados.join(" + ")} | ${rango} | ${minutos} min | ${correo || "sin correo"}` });
   fetch("https://docs.google.com/forms/d/e/1FAIpQLSe7i0YQHAopwFdJs61ouA5qKPj_RCu-dH8WuwN9CIdjI1USqA/formResponse", { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
-  $("comprobante").textContent = `Guardia de redes · ${alumno} · ${resultados.join(" + ")} = ${total} de ${PEDIDOS.length * 100} · ${new Date().toLocaleString("es-AR")}`;
+  $("comprobante").textContent = `Guardia de ${modulo.toLowerCase()} · ${alumno} · ${resultados.join(" + ")} = ${total} de ${maximo} · ${rango} · ${new Date().toLocaleString("es-AR")}`;
 }
 </script>
 </body>
