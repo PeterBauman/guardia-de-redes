@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardia de redes · DS-32</title>
+<style>
+  :root { --marino:#0B2545; --naranja:#FB923C; --celeste:#00C2D7; --gris:#6B7280; --raya:#DDE1E6; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#1A1A1A; background:#fff; }
+  header { display:flex; justify-content:space-between; align-items:baseline; padding:14px 28px; border-bottom:2px solid var(--raya); color:var(--gris); font-size:14px; }
+  header b { color:var(--marino); }
+  main { max-width:1280px; margin:0 auto; padding:18px 28px 40px; }
+  .portada { background:var(--marino); color:#fff; padding:56px 60px; border-left:10px solid var(--naranja); }
+  .portada small { color:var(--celeste); font-weight:bold; letter-spacing:.5px; }
+  .portada h1 { font-size:46px; margin:14px 0 4px; }
+  .portada h2 { font-size:46px; margin:0 0 22px; color:var(--naranja); }
+  .portada ol { font-size:20px; line-height:1.6; color:#C5D3E0; padding-left:24px; }
+  .portada p { color:#9FB3C8; font-size:14px; margin-top:34px; }
+  button { font-family:inherit; cursor:pointer; }
+  .principal { background:var(--naranja); color:var(--marino); border:0; font-weight:bold; font-size:18px; padding:12px 26px; margin-top:8px; }
+  .etiqueta { color:var(--naranja); font-weight:bold; font-size:15px; }
+  h3 { color:var(--marino); font-size:26px; margin:4px 0 6px; }
+  .pedido { font-size:19px; margin:0 0 14px; }
+  .cols { display:grid; grid-template-columns: 330px 1fr; gap:22px; }
+  .comandos button { display:block; width:100%; text-align:left; font-family: Menlo, Consolas, monospace; font-size:15px; padding:10px 12px; margin-bottom:8px; background:#fff; border:1.5px solid var(--marino); color:var(--marino); }
+  .comandos button.usado { background:#EEF1F5; color:var(--gris); border-color:var(--raya); }
+  .terminal { background:#0C0C0C; color:#E5E5E5; font-family: Menlo, Consolas, monospace; font-size:16px; line-height:1.45; padding:16px 18px; height:340px; overflow:auto; white-space:pre-wrap; }
+  .terminal .c { color:#fff; font-weight:bold; }
+  .diag { margin-top:18px; border-top:2px solid var(--raya); padding-top:14px; }
+  .diag b.t { color:var(--marino); font-size:19px; }
+  .diag button { display:block; width:100%; text-align:left; font-size:18px; padding:10px 14px; margin-top:8px; background:#fff; border:1.5px solid var(--raya); }
+  .diag button.bien { border-color:#15803D; background:#ECFDF3; font-weight:bold; }
+  .diag button.mal { border-color:#B91C1C; background:#FEF2F2; color:var(--gris); }
+  .cierre { margin-top:14px; font-size:17px; line-height:1.5; border-left:6px solid var(--naranja); padding:6px 14px; }
+  .marcador { font-size:15px; }
+  .marcador b { font-size:20px; color:var(--marino); }
+  table { border-collapse:collapse; font-size:19px; margin-top:14px; }
+  td, th { padding:8px 22px 8px 0; text-align:left; border-bottom:1px solid var(--raya); }
+  .oculto { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <span>Guardia de redes · DS-32 · Instituto Urquiza</span>
+  <span class="marcador" id="marcador"></span>
+</header>
+<main>
+
+<section id="inicio" class="portada">
+  <small>REDES Y COMUNICACIONES · DIAGNÓSTICO</small>
+  <h1>Guardia de redes</h1>
+  <h2>Cinco pedidos de soporte</h2>
+  <ol>
+    <li>Llega un pedido de soporte de una oficina.</li>
+    <li>Se elige qué comando ejecutar y se lee la salida. Cada comando cuesta 10 puntos.</li>
+    <li>Cuando la causa está clara, se elige el diagnóstico. Un diagnóstico equivocado cuesta 30 puntos.</li>
+    <li>Cada pedido arranca en 100 puntos: gana quien diagnostica con menos comandos.</li>
+  </ol>
+  <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:320px;border:0;margin-right:10px">
+  <button class="principal" onclick="empezar()">Atender el primer pedido</button>
+  <p>DS-32 · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
+</section>
+
+<section id="juego" class="oculto">
+  <div class="etiqueta" id="numero"></div>
+  <h3 id="titulo"></h3>
+  <p class="pedido" id="pedido"></p>
+  <div class="cols">
+    <div class="comandos" id="comandos"></div>
+    <div class="terminal" id="terminal"></div>
+  </div>
+  <div class="diag">
+    <b class="t">Diagnóstico</b>
+    <div id="opciones"></div>
+    <div class="cierre oculto" id="cierre"></div>
+    <button class="principal oculto" id="siguiente" onclick="siguiente()">Siguiente pedido</button>
+  </div>
+</section>
+
+<section id="final" class="oculto">
+  <div class="etiqueta">Cierre de la guardia</div>
+  <h3>Resultado</h3>
+  <table id="tabla"></table>
+  <p id="comprobante" style="font-family:Menlo,Consolas,monospace;font-size:17px;background:#EEF1F5;padding:12px 14px"></p>
+  <p style="color:#6B7280;font-size:15px">Para informar el resultado, copiar el renglón anterior y pegarlo en el chat de la clase.</p>
+  <div class="cierre">
+    Orden de diagnóstico que queda de la práctica: configuración propia (ipconfig), puerta de enlace, un equipo de la red,
+    una dirección externa, resolución de nombres y, por último, el servicio. Cada paso descarta una capa.
+  </div>
+</section>
+
+</main>
+<script>
+const OK = (ip, t, ttl) => `Haciendo ping a ${ip} con 32 bytes de datos:
+Respuesta desde ${ip}: bytes=32 tiempo${t} TTL=${ttl}
+Respuesta desde ${ip}: bytes=32 tiempo${t} TTL=${ttl}
+
+    Paquetes: enviados = 4, recibidos = 4, perdidos = 0 (0% perdidos)`;
+const INACC = (ip, yo) => `Haciendo ping a ${ip} con 32 bytes de datos:
+Respuesta desde ${yo}: Host de destino inaccesible.
+Respuesta desde ${yo}: Host de destino inaccesible.
+
+    Paquetes: enviados = 4, recibidos = 4, perdidos = 0 (0% perdidos)`;
+const GENERAL = ip => `Haciendo ping a ${ip} con 32 bytes de datos:
+PING: error en la transmisión. Error general.
+PING: error en la transmisión. Error general.
+
+    Paquetes: enviados = 4, recibidos = 0, perdidos = 4 (100% perdidos)`;
+const IPCONFIG = (ip, masc, gw, dns, dhcp = "sí") => `Adaptador de Ethernet Ethernet:
+
+   DHCP habilitado . . . . . . . . . . . : ${dhcp}
+   Dirección IPv4. . . . . . . . . . . . : ${ip}
+   Máscara de subred . . . . . . . . . . : ${masc}
+   Puerta de enlace predeterminada . . . : ${gw}
+   Servidores DNS. . . . . . . . . . . . : ${dns}`;
+const NS_OK = dns => `Servidor:  dns.oficina.local
+Address:  ${dns}
+
+Respuesta no autoritativa:
+Nombre:   www.ejemplo.com
+Address:  93.184.216.34`;
+const NS_MAL = dns => `DNS request timed out.
+    timeout was 2 seconds.
+Servidor:  UnKnown
+Address:  ${dns}
+
+*** Se agotó el tiempo de espera de la solicitud a UnKnown`;
+const TR_OK = `Traza a 8.8.8.8 sobre un máximo de 30 saltos:
+
+  1     1 ms     1 ms     1 ms  192.168.1.1
+  2     9 ms     8 ms     9 ms  10.20.0.1
+  3    17 ms    18 ms    17 ms  8.8.8.8
+
+Traza completa.`;
+const TR_INACC = yo => `Traza a 8.8.8.8 sobre un máximo de 30 saltos:
+
+  1  ${yo}  informes: Host de destino inaccesible.
+
+Traza completa.`;
+const PUERTO = (ping, tcp) => `ComputerName     : 192.168.1.20
+RemotePort       : 80
+PingSucceeded    : ${ping}
+TcpTestSucceeded : ${tcp}`;
+
+const PEDIDOS = [
+ { titulo: "Recepción: «no tengo Internet»",
+   pedido: "La PC de Recepción quedó sin acceso a nada desde que se reinició. Las demás PC de la oficina trabajan con normalidad.",
+   salidas: {
+     "ipconfig /all": `Adaptador de Ethernet Ethernet:
+
+   DHCP habilitado . . . . . . . . . . . : sí
+   Dirección IPv4 de configuración automática: 169.254.23.118
+   Máscara de subred . . . . . . . . . . : 255.255.0.0
+   Puerta de enlace predeterminada . . . :
+   Servidores DNS. . . . . . . . . . . . :`,
+     "ping 192.168.1.1   (puerta de enlace)": GENERAL("192.168.1.1"),
+     "ping 192.168.1.20   (servidor de la oficina)": GENERAL("192.168.1.20"),
+     "ping 8.8.8.8": GENERAL("8.8.8.8"),
+     "nslookup www.ejemplo.com": `DNS request timed out.
+    timeout was 2 seconds.
+*** No se puede encontrar el servidor predeterminado`,
+     "tracert 8.8.8.8": `Traza a 8.8.8.8 sobre un máximo de 30 saltos:
+
+  1  Error en la transmisión: código 1231.
+
+Traza completa.`,
+     "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("False", "False") },
+   opciones: ["El servidor DNS no responde.", "El equipo no obtuvo dirección por DHCP y se asignó una por su cuenta.", "El proveedor de Internet tiene una caída.", "El cable de red está desconectado."], ok: 1,
+   cierre: "Una dirección 169.254.x.x indica que el equipo pidió configuración por DHCP y nadie le respondió. Sin dirección válida no tiene puerta de enlace ni DNS: todo lo demás falla en consecuencia. Con el cable desconectado, ipconfig informaría «medios desconectados». Alcanzaba con un solo comando: ipconfig." },
+ { titulo: "Contaduría: «no abre ninguna página»",
+   pedido: "En una PC de Contaduría el navegador no abre ningún sitio. El programa de facturación, que se conecta por dirección IP, funciona.",
+   salidas: {
+     "ipconfig /all": IPCONFIG("192.168.1.34", "255.255.255.0", "192.168.1.1", "192.168.1.250"),
+     "ping 192.168.1.1   (puerta de enlace)": OK("192.168.1.1", "=1ms", 64),
+     "ping 192.168.1.20   (servidor de la oficina)": OK("192.168.1.20", "<1m", 128),
+     "ping 8.8.8.8": OK("8.8.8.8", "=18ms", 117),
+     "nslookup www.ejemplo.com": NS_MAL("192.168.1.250"),
+     "tracert 8.8.8.8": TR_OK,
+     "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "True") },
+   opciones: ["La puerta de enlace está mal configurada.", "El servidor DNS configurado (192.168.1.250) no responde.", "El proveedor de Internet tiene una caída.", "El firewall bloquea la navegación web."], ok: 1,
+   cierre: "El ping a 8.8.8.8 responde: hay salida a Internet y la puerta de enlace funciona. Lo que falla es la traducción de nombres a direcciones: nslookup agota el tiempo de espera contra 192.168.1.250. La combinación que lo demuestra es ping a 8.8.8.8 (anda) y nslookup (no anda)." },
+ { titulo: "Ventas: «veo la impresora, pero no salgo a Internet»",
+   pedido: "A una notebook de Ventas se le cargó la configuración de red a mano. Imprime y accede al servidor de la oficina, pero no llega a nada externo. El resto navega sin problemas.",
+   salidas: {
+     "ipconfig /all": IPCONFIG("192.168.1.40", "255.255.255.0", "192.168.1.254", "8.8.8.8", "no"),
+     "ping 192.168.1.254   (puerta de enlace)": INACC("192.168.1.254", "192.168.1.40"),
+     "ping 192.168.1.20   (servidor de la oficina)": OK("192.168.1.20", "<1m", 128),
+     "ping 8.8.8.8": INACC("8.8.8.8", "192.168.1.40"),
+     "nslookup www.ejemplo.com": NS_MAL("8.8.8.8"),
+     "tracert 8.8.8.8": TR_INACC("192.168.1.40"),
+     "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "True") },
+   opciones: ["El servidor DNS externo tiene una caída.", "La máscara de subred es incorrecta.", "La puerta de enlace configurada no existe en la red.", "El switch de la oficina presenta una falla."], ok: 2,
+   cierre: "El equipo se comunica con su red (el servidor responde), de modo que cable, switch, dirección y máscara están bien. La puerta de enlace cargada, 192.168.1.254, no responde: el router de la oficina es 192.168.1.1. El DNS falla como consecuencia, porque es externo y no hay por dónde salir." },
+ { titulo: "Administración: «la PC nueva no ve al servidor»",
+   pedido: "Se instaló una PC nueva en Administración con configuración manual. No accede al servidor ni a Internet. El resto de la oficina trabaja con normalidad.",
+   salidas: {
+     "ipconfig /all": IPCONFIG("192.168.1.130", "255.255.255.128", "192.168.1.1", "192.168.1.1", "no"),
+     "ping 192.168.1.1   (puerta de enlace)": INACC("192.168.1.1", "192.168.1.130"),
+     "ping 192.168.1.20   (servidor de la oficina)": INACC("192.168.1.20", "192.168.1.130"),
+     "ping 8.8.8.8": INACC("8.8.8.8", "192.168.1.130"),
+     "nslookup www.ejemplo.com": NS_MAL("192.168.1.1"),
+     "tracert 8.8.8.8": TR_INACC("192.168.1.130"),
+     "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("False", "False") },
+   opciones: ["El servidor de la oficina está apagado.", "El cable de red de la PC está dañado.", "El servidor DHCP no respondió.", "La máscara deja al equipo en otra subred, distinta de la del servidor y del router."], ok: 3,
+   cierre: "Con la máscara 255.255.255.128 (/25), la dirección 192.168.1.130 pertenece a la subred de .128 a .255. El servidor (.20) y el router (.1) quedan en la otra mitad: el equipo los considera de otra red y no tiene una puerta de enlace alcanzable. La red de la oficina es /24: corresponde 255.255.255.0." },
+ { titulo: "Toda la oficina: «no abre la intranet»",
+   pedido: "Nadie puede abrir la intranet (http://192.168.1.20). Internet y el correo funcionan en todas las PC.",
+   salidas: {
+     "ipconfig /all": IPCONFIG("192.168.1.34", "255.255.255.0", "192.168.1.1", "192.168.1.1"),
+     "ping 192.168.1.1   (puerta de enlace)": OK("192.168.1.1", "=1ms", 64),
+     "ping 192.168.1.20   (servidor de la oficina)": OK("192.168.1.20", "<1m", 128),
+     "ping 8.8.8.8": OK("8.8.8.8", "=18ms", 117),
+     "nslookup www.ejemplo.com": NS_OK("192.168.1.1"),
+     "tracert 8.8.8.8": TR_OK,
+     "Test-NetConnection 192.168.1.20 -Port 80": PUERTO("True", "False") },
+   opciones: ["El servicio web del servidor está detenido o su puerto 80 está bloqueado.", "El servidor DNS no responde.", "El cable de red del servidor está desconectado.", "La puerta de enlace está mal configurada."], ok: 0,
+   cierre: "El servidor responde al ping: la red llega hasta él. Lo que no responde es el puerto 80, donde atiende el servicio web. Que un equipo responda al ping no significa que su servicio esté en funcionamiento: el problema ya no es de red, es del servidor (servicio detenido o firewall del propio equipo)." }
+];
+
+let i = 0, puntos = 0, total = 0, resuelto = false, resultados = [];
+const $ = id => document.getElementById(id);
+const ver = (id, si) => $(id).classList.toggle("oculto", !si);
+
+function marcador() {
+  $("marcador").innerHTML = `Pedido ${Math.min(i + 1, PEDIDOS.length)} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
+}
+let alumno = "";
+function empezar() { alumno = $("nombre").value.trim(); if (!alumno) { $("nombre").focus(); return; } ver("inicio", false); ver("juego", true); cargar(); }
+function cargar() {
+  const p = PEDIDOS[i]; puntos = 100; resuelto = false;
+  $("numero").textContent = `Pedido ${i + 1}`;
+  $("titulo").textContent = p.titulo;
+  $("pedido").textContent = p.pedido;
+  $("terminal").textContent = "C:\\> ";
+  $("comandos").innerHTML = ""; $("opciones").innerHTML = "";
+  ver("cierre", false); ver("siguiente", false);
+  Object.keys(p.salidas).forEach(cmd => {
+    const b = document.createElement("button"); b.textContent = cmd;
+    b.onclick = () => {
+      if (!b.classList.contains("usado") && !resuelto) { puntos = Math.max(0, puntos - 10); b.classList.add("usado"); }
+      const t = $("terminal"); const limpio = cmd.replace(/\s+\(.*\)$/, "");
+      t.innerHTML += `<span class="c">${limpio}</span>\n\n${p.salidas[cmd]}\n\nC:\\> `;
+      t.scrollTop = t.scrollHeight; marcador();
+    };
+    $("comandos").appendChild(b);
+  });
+  p.opciones.forEach((texto, k) => {
+    const b = document.createElement("button"); b.textContent = "abcd"[k] + ")  " + texto;
+    b.onclick = () => {
+      if (resuelto) return;
+      if (k === p.ok) {
+        resuelto = true; b.classList.add("bien"); total += puntos; resultados.push(puntos);
+        $("cierre").textContent = p.cierre; ver("cierre", true);
+        $("siguiente").textContent = i + 1 < PEDIDOS.length ? "Siguiente pedido" : "Ver el resultado";
+        ver("siguiente", true);
+      } else if (!b.classList.contains("mal")) { b.classList.add("mal"); puntos = Math.max(0, puntos - 30); }
+      marcador();
+    };
+    $("opciones").appendChild(b);
+  });
+  marcador();
+}
+function siguiente() {
+  i++;
+  if (i < PEDIDOS.length) { cargar(); window.scrollTo(0, 0); return; }
+  ver("juego", false); ver("final", true);
+  $("tabla").innerHTML = "<tr><th>Pedido</th><th>Puntos</th></tr>" +
+    PEDIDOS.map((p, k) => `<tr><td>${k + 1}. ${p.titulo}</td><td>${resultados[k]}</td></tr>`).join("") +
+    `<tr><th>Total</th><th>${total} de ${PEDIDOS.length * 100}</th></tr>`;
+  $("marcador").innerHTML = `Total: <b>${total}</b>`;
+  $("comprobante").textContent = `Guardia de redes · ${alumno} · ${resultados.join(" + ")} = ${total} de ${PEDIDOS.length * 100} · ${new Date().toLocaleString("es-AR")}`;
+}
+</script>
+</body>
+</html>
