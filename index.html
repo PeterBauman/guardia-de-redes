@@ -108,6 +108,7 @@
     <div><h4>Guardia de redes</h4><ol id="podioRedes"></ol></div>
     <div><h4>Guardia de seguridad</h4><ol id="podioSeguridad"></ol></div>
   </div>
+  <div class="podio" style="grid-template-columns:1fr;margin-top:22px"><div><h4>Jugando ahora</h4><ol id="podioEnCurso"></ol></div></div>
   <p id="podioAviso" style="color:#6B7280;font-size:15px"></p>
 </section>
 
@@ -525,7 +526,13 @@ Intentos fallidos previos: 0`,
 const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
 function podio() {
   ["inicio", "juego", "final"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
-  const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(lista => {
+  const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(datos => {
+    const lista = Array.isArray(datos) ? datos : datos.podio;
+    const enCurso = Array.isArray(datos) ? null : datos.enCurso;
+    $("podioEnCurso").innerHTML = enCurso === null ? "<li>Todavía no disponible.</li>" :
+      enCurso.sort((a, b) => a.haceMin - b.haceMin).map(x =>
+        `<li><span>${esc(x.nombre)} · guardia de ${esc(String(x.guardia).toLowerCase())}</span><span class="p">resolvió ${esc(x.pedido)} · ${x.total} puntos · hace ${x.haceMin} min</span></li>`).join("") ||
+      "<li>Nadie en este momento.</li>";
     ["Redes", "Seguridad"].forEach(g => {
       const orden = lista.filter(x => x.guardia === g).sort((a, b) => b.total - a.total || a.minutos - b.minutos);
       $("podio" + g).innerHTML = orden.slice(0, 15).map((x, k) =>
@@ -548,11 +555,18 @@ const mezclar = a => { for (let k = a.length - 1; k > 0; k--) { const j = Math.f
 function marcador() {
   $("marcador").innerHTML = `${esc(modulo)} · pedido ${Math.min(i + 1, PEDIDOS.length)} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
 }
+const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe7i0YQHAopwFdJs61ouA5qKPj_RCu-dH8WuwN9CIdjI1USqA/formResponse";
+function avisar(n) {
+  const minutos = Math.max(0, Math.round((Date.now() - inicio) / 60000));
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
+    "entry.1812026381": `AVANCE | ${modulo} | ${n} de ${PEDIDOS.length} | ${minutos} min` });
+  try { fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos }).catch(() => {}); } catch (e) {}
+}
 function empezar(m) {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
   if (!alumno) { $("nombre").focus(); return; }
   modulo = m; PEDIDOS = MODULOS[m]; inicio = Date.now();
-  ver("inicio", false); ver("juego", true); cargar();
+  ver("inicio", false); ver("juego", true); cargar(); avisar(0);
 }
 function cargar() {
   const p = PEDIDOS[i]; const pr = p.prompt || "C:\\> "; puntos = 100; resuelto = false;
@@ -578,6 +592,7 @@ function cargar() {
       if (resuelto) return;
       if (o.bien) {
         resuelto = true; b.classList.add("bien"); total += puntos; resultados.push(puntos);
+        if (i + 1 < PEDIDOS.length) avisar(i + 1);
         $("cierre").textContent = p.cierre; ver("cierre", true);
         $("siguiente").textContent = i + 1 < PEDIDOS.length ? "Siguiente pedido" : "Ver el resultado";
         ver("siguiente", true);
@@ -601,7 +616,7 @@ function siguiente() {
   $("marcador").innerHTML = `Total: <b>${total}</b>`;
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
     "entry.1812026381": `${modulo} | ${resultados.join(" + ")} | ${rango} | ${minutos} min | ${correo || "sin correo"}` });
-  fetch("https://docs.google.com/forms/d/e/1FAIpQLSe7i0YQHAopwFdJs61ouA5qKPj_RCu-dH8WuwN9CIdjI1USqA/formResponse", { method: "POST", mode: "no-cors", body: datos })
+  fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
   $("comprobante").textContent = `Guardia de ${modulo.toLowerCase()} · ${alumno} · ${resultados.join(" + ")} = ${total} de ${maximo} · ${rango} · ${new Date().toLocaleString("es-AR")}`;
