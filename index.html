@@ -83,7 +83,7 @@
   <h3>Resultado</h3>
   <table id="tabla"></table>
   <p id="comprobante" style="font-family:Menlo,Consolas,monospace;font-size:17px;background:#EEF1F5;padding:12px 14px"></p>
-  <p style="color:#6B7280;font-size:15px">Para informar el resultado, copiar el renglón anterior y pegarlo en el chat de la clase.</p>
+  <p id="aviso" style="color:#6B7280;font-size:15px">Registrando el resultado…</p>
   <div class="cierre">
     Orden de diagnóstico que queda de la práctica: configuración propia (ipconfig), puerta de enlace, un equipo de la red,
     una dirección externa, resolución de nombres y, por último, el servicio. Cada paso descarta una capa.
@@ -269,6 +269,10 @@ function siguiente() {
     PEDIDOS.map((p, k) => `<tr><td>${k + 1}. ${p.titulo}</td><td>${resultados[k]}</td></tr>`).join("") +
     `<tr><th>Total</th><th>${total} de ${PEDIDOS.length * 100}</th></tr>`;
   $("marcador").innerHTML = `Total: <b>${total}</b>`;
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total), "entry.1812026381": resultados.join(" + ") });
+  fetch("https://docs.google.com/forms/d/e/1FAIpQLSe7i0YQHAopwFdJs61ouA5qKPj_RCu-dH8WuwN9CIdjI1USqA/formResponse", { method: "POST", mode: "no-cors", body: datos })
+    .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
+    .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
   $("comprobante").textContent = `Guardia de redes · ${alumno} · ${resultados.join(" + ")} = ${total} de ${PEDIDOS.length * 100} · ${new Date().toLocaleString("es-AR")}`;
 }
 </script>
