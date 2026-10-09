@@ -38,6 +38,13 @@
   .marcador b { font-size:20px; color:var(--marino); }
   table { border-collapse:collapse; font-size:17px; margin-top:14px; }
   td, th { vertical-align:top; padding:8px 22px 8px 0; text-align:left; border-bottom:1px solid var(--raya); }
+  .podio { display:grid; grid-template-columns:1fr 1fr; gap:34px; }
+  .podio h4 { color:var(--marino); font-size:22px; margin:6px 0 10px; border-bottom:3px solid var(--naranja); padding-bottom:6px; }
+  .podio ol { list-style:none; margin:0; padding:0; }
+  .podio li { display:flex; justify-content:space-between; gap:14px; padding:7px 10px; font-size:18px; border-bottom:1px solid var(--raya); }
+  .podio li.top { font-weight:bold; font-size:21px; color:var(--marino); background:#FFF4E8; }
+  .podio li span.p { white-space:nowrap; }
+  .secundario { background:transparent; color:#fff; border:1.5px solid #9FB3C8; font-size:16px; padding:10px 20px; margin-left:10px; }
   .oculto { display:none; }
 </style>
 </head>
@@ -62,6 +69,7 @@
   <input id="correo" type="email" placeholder="Correo (opcional)" style="font-size:18px;padding:11px 12px;width:300px;border:0"><br>
   <button class="principal" onclick="empezar('Redes')" style="margin-right:10px;margin-top:14px">Guardia de redes</button>
   <button class="principal" onclick="empezar('Seguridad')">Guardia de seguridad</button>
+  <button class="secundario oculto" id="btnPodio1" onclick="podio()">Ver el podio</button>
   <p>DS-32 · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
 </section>
 
@@ -90,6 +98,17 @@
   <div class="cierre">
     La columna «Con qué se veía» indica el paso que alcanzaba para llegar al diagnóstico. Sirve de guía para la puesta en común.
   </div>
+  <button class="principal oculto" id="btnPodio2" onclick="podio()">Ver el podio</button>
+</section>
+
+<section id="podio" class="oculto">
+  <div class="etiqueta">Podio · se actualiza solo cada 20 segundos</div>
+  <h3>Mejores resultados de cada guardia</h3>
+  <div class="podio">
+    <div><h4>Guardia de redes</h4><ol id="podioRedes"></ol></div>
+    <div><h4>Guardia de seguridad</h4><ol id="podioSeguridad"></ol></div>
+  </div>
+  <p id="podioAviso" style="color:#6B7280;font-size:15px"></p>
 </section>
 
 </main>
@@ -503,6 +522,21 @@ Intentos fallidos previos: 0`,
    cierre: "La auditoría identifica la cuenta y el origen: jperez, por VPN, sin intentos fallidos. La cuenta seguía activa dos meses después de la desvinculación. Falló la administración de cuentas: la baja de accesos debe formar parte del procedimiento de egreso. Gracias a las cuentas individuales pudo atribuirse la acción, y gracias a la copia fuera de línea puede recuperarse." }
 ];
 
+const PODIO_URL = "";
+function podio() {
+  ["inicio", "juego", "final"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
+  const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(lista => {
+    ["Redes", "Seguridad"].forEach(g => {
+      const orden = lista.filter(x => x.guardia === g).sort((a, b) => b.total - a.total || a.minutos - b.minutos);
+      $("podio" + g).innerHTML = orden.slice(0, 15).map((x, k) =>
+        `<li class="${k < 3 ? "top" : ""}"><span>${k + 1}.º &nbsp;${esc(x.nombre)}</span><span class="p">${x.total} · ${x.minutos} min</span></li>`).join("") ||
+        "<li>Todavía no hay resultados.</li>";
+    });
+    $("podioAviso").textContent = "Actualizado " + new Date().toLocaleTimeString("es-AR") + ". Con igual puntaje, va primero quien tardó menos.";
+  }).catch(() => { $("podioAviso").textContent = "No se pudo leer el podio."; });
+  cargarPodio(); setInterval(cargarPodio, 20000);
+}
+if (PODIO_URL) document.addEventListener("DOMContentLoaded", () => { ver("btnPodio1", true); ver("btnPodio2", true); if (location.hash === "#podio") podio(); });
 const MODULOS = { "Redes": REDES, "Seguridad": SEGURIDAD };
 let PEDIDOS = REDES, modulo = "Redes", inicio = 0;
 let i = 0, puntos = 0, total = 0, resuelto = false, resultados = [], alumno = "", correo = "";
