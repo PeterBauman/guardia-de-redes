@@ -89,6 +89,7 @@
   <button class="principal" onclick="empezar('Redes')" style="margin-right:10px;margin-top:14px">Guardia de redes</button>
   <button class="principal" onclick="empezar('Seguridad')" style="margin-right:10px">Guardia de seguridad</button>
   <button class="principal" onclick="empezar('Parcial')">Guardia del parcial</button>
+  <button class="principal oculto" id="btnEscrita" onclick="empezarEscrita()" style="margin-left:10px">Guardia escrita · corrige la IA</button>
   <button class="secundario oculto" id="btnPodio1" onclick="podio()">Ver el podio</button>
   <p>3º 2º DS y AF · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
 </section>
@@ -121,6 +122,17 @@
   <button class="principal oculto" id="btnPodio2" onclick="podio()">Ver el podio</button>
 </section>
 
+<section id="escrita" class="oculto">
+  <div class="etiqueta" id="eNumero"></div>
+  <h3 id="eConsigna"></h3>
+  <p class="pedido">Respondé con tus palabras. No hace falta que sea largo: alcanza con que se entienda la idea.</p>
+  <textarea id="eRespuesta" rows="7" maxlength="2000" style="width:100%;font-size:17px;padding:12px;border:1.5px solid var(--marino);font-family:inherit"></textarea>
+  <div class="diag">
+    <button class="principal" id="eCorregir" onclick="corregirEscrita()">Corregir</button>
+    <div class="cierre oculto" id="eDevolucion"></div>
+    <button class="principal oculto" id="eSiguiente" onclick="siguienteEscrita()">Siguiente pregunta</button>
+  </div>
+</section>
 <section id="podio" class="oculto">
   <div class="etiqueta">Podio · se actualiza solo cada 20 segundos</div>
   <h3>Mejores resultados de cada guardia</h3>
@@ -658,7 +670,7 @@ Reply from 192.168.1.20: bytes=32 time<1ms TTL=128`,
 
 const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
 function podio() {
-  ["inicio", "juego", "final"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
+  ["inicio", "juego", "final", "escrita"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
   const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(datos => {
     const lista = Array.isArray(datos) ? datos : datos.podio;
     const enCurso = Array.isArray(datos) ? null : datos.enCurso;
@@ -754,6 +766,69 @@ function siguiente() {
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
   $("comprobante").textContent = `Guardia ${modulo === "Parcial" ? "del parcial" : "de " + modulo.toLowerCase()} · ${alumno} · ${resultados.join(" + ")} = ${total} de ${maximo} · ${rango} · ${new Date().toLocaleString("es-AR")}`;
+}
+
+// ---- Guardia escrita: corrige la IA (solo en guardian.nilosolutions.com) ----
+const CON_IA = !location.hostname.endsWith("github.io") && location.protocol !== "file:";
+let EPREG = [], ei = 0, epuntos = [];
+if (CON_IA) document.addEventListener("DOMContentLoaded", () => ver("btnEscrita", true));
+async function empezarEscrita() {
+  alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
+  if (!alumno) { $("nombre").focus(); return; }
+  modulo = "Escrita"; inicio = Date.now(); ei = 0; epuntos = [];
+  try { EPREG = await fetch("/api/preguntas").then(r => r.json()); } catch (e) { alert("No se pudieron cargar las preguntas."); return; }
+  ver("inicio", false); ver("escrita", true); cargarEscrita(); avisarEscrita(0);
+}
+function avisarEscrita(n) {
+  const minutos = Math.max(0, Math.round((Date.now() - inicio) / 60000));
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(epuntos.reduce((a, b) => a + b, 0)),
+    "entry.1812026381": `AVANCE | Escrita | ${n} de ${EPREG.length} | ${minutos} min` });
+  try { fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos }).catch(() => {}); } catch (e) {}
+}
+function cargarEscrita() {
+  const q = EPREG[ei];
+  $("eNumero").textContent = `Escrita · pregunta ${ei + 1} de ${EPREG.length}`;
+  $("eConsigna").textContent = q.consigna;
+  $("eRespuesta").value = ""; $("eRespuesta").disabled = false;
+  $("eCorregir").disabled = false; $("eCorregir").textContent = "Corregir"; ver("eCorregir", true);
+  ver("eDevolucion", false); ver("eSiguiente", false);
+  $("marcador").innerHTML = `Escrita · pregunta ${ei + 1} de ${EPREG.length}`;
+}
+async function corregirEscrita() {
+  const respuesta = $("eRespuesta").value.trim();
+  if (respuesta.length < 3) { $("eRespuesta").focus(); return; }
+  $("eCorregir").disabled = true; $("eCorregir").textContent = "Corrigiendo…"; $("eRespuesta").disabled = true;
+  try {
+    const r = await fetch("/api/corregir", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pregunta: EPREG[ei].id, respuesta }) });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || "La corrección falló.");
+    epuntos.push(d.puntaje);
+    $("eDevolucion").innerHTML = `<b>${d.puntaje} de 10.</b> ${esc(d.devolucion)}`; ver("eDevolucion", true);
+    ver("eCorregir", false);
+    $("eSiguiente").textContent = ei + 1 < EPREG.length ? "Siguiente pregunta" : "Ver la nota"; ver("eSiguiente", true);
+    if (ei + 1 < EPREG.length) avisarEscrita(ei + 1);
+  } catch (e) {
+    $("eDevolucion").textContent = e.message + " Tocá «Corregir» de nuevo."; ver("eDevolucion", true);
+    $("eCorregir").disabled = false; $("eCorregir").textContent = "Corregir"; $("eRespuesta").disabled = false;
+  }
+}
+function siguienteEscrita() {
+  ei++;
+  if (ei < EPREG.length) { cargarEscrita(); window.scrollTo(0, 0); return; }
+  const suma = epuntos.reduce((a, b) => a + b, 0), minutos = Math.max(1, Math.round((Date.now() - inicio) / 60000));
+  const nota = Math.max(1, Math.round((suma / EPREG.length) * 2) / 2);
+  ver("escrita", false); ver("final", true); window.scrollTo(0, 0);
+  $("rango").textContent = `Nota: ${String(nota).replace(".", ",")} · ${minutos} min`;
+  $("tabla").innerHTML = "<tr><th>Pregunta</th><th>Puntaje</th></tr>" +
+    EPREG.map((q, k) => `<tr><td>${k + 1}. ${esc(q.consigna)}</td><td>${epuntos[k]} de 10</td></tr>`).join("");
+  $("marcador").innerHTML = `Nota: <b>${String(nota).replace(".", ",")}</b>`;
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(nota),
+    "entry.1812026381": `Escrita | ${epuntos.join(" + ")} | nota ${nota} | ${minutos} min | ${correo || "sin correo"}` });
+  fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
+    .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
+    .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: mostrale esta pantalla al profesor."; });
+  $("comprobante").textContent = `Guardia escrita · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR")}`;
 }
 </script>
 </body>
