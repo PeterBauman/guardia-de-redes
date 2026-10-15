@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Guardia de redes · DS-32</title>
+<title>Guardia de redes</title>
 <style>
   :root { --marino:#0B2545; --naranja:#FB923C; --celeste:#00C2D7; --gris:#6B7280; --raya:#DDE1E6; }
   * { box-sizing: border-box; }
@@ -38,7 +38,7 @@
   .marcador b { font-size:20px; color:var(--marino); }
   table { border-collapse:collapse; font-size:17px; margin-top:14px; }
   td, th { vertical-align:top; padding:8px 22px 8px 0; text-align:left; border-bottom:1px solid var(--raya); }
-  .podio { display:grid; grid-template-columns:1fr 1fr; gap:34px; }
+  .podio { display:grid; grid-template-columns:1fr 1fr 1fr; gap:28px; }
   .podio h4 { color:var(--marino); font-size:22px; margin:6px 0 10px; border-bottom:3px solid var(--naranja); padding-bottom:6px; }
   .podio ol { list-style:none; margin:0; padding:0; }
   .podio li { display:flex; justify-content:space-between; gap:14px; padding:7px 10px; font-size:18px; border-bottom:1px solid var(--raya); }
@@ -46,11 +46,30 @@
   .podio li span.p { white-space:nowrap; }
   .secundario { background:transparent; color:#fff; border:1.5px solid #9FB3C8; font-size:16px; padding:10px 20px; margin-left:10px; }
   .oculto { display:none; }
+  @media (max-width: 760px) {
+    header { flex-direction:column; gap:4px; padding:10px 14px; font-size:12px; }
+    main { padding:12px 14px 32px; }
+    .portada { padding:24px 18px; border-left-width:6px; }
+    .portada h1, .portada h2 { font-size:30px; }
+    .portada ol { font-size:16px; padding-left:20px; }
+    .portada input { width:100% !important; margin:0 0 8px 0 !important; }
+    .portada .principal, .secundario { display:block; width:100%; margin:8px 0 0 0 !important; }
+    h3 { font-size:21px; }
+    .pedido { font-size:16px; }
+    .cols { grid-template-columns:1fr; gap:12px; }
+    .comandos button { font-size:14px; padding:12px; }
+    .terminal { font-size:13px; height:250px; padding:12px; }
+    .diag button { font-size:16px; padding:12px; }
+    .cierre { font-size:15px; }
+    table { font-size:14px; } td, th { padding:6px 10px 6px 0; }
+    .podio { grid-template-columns:1fr; gap:18px; }
+    .podio li { font-size:15px; } .podio li.top { font-size:17px; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <span>Guardia de redes · DS-32 · Instituto Urquiza</span>
+  <span>Guardia de redes · 3º 2º DS y AF · Instituto Urquiza</span>
   <span class="marcador" id="marcador"></span>
 </header>
 <main>
@@ -60,7 +79,7 @@
   <h1>Guardia de redes</h1>
   <h2>Pedidos de soporte</h2>
   <ol>
-    <li>Llega un pedido de soporte de una oficina. Hay dos guardias de diez pedidos: redes y seguridad.</li>
+    <li>Llega un pedido de soporte de una oficina. Hay tres guardias de diez pedidos: redes, seguridad y la del parcial.</li>
     <li>Se elige qué comando o revisión ejecutar y se lee el resultado. Cada paso cuesta 10 puntos.</li>
     <li>Cuando la causa está clara, se elige el diagnóstico. Un diagnóstico equivocado cuesta 30 puntos.</li>
     <li>Cada pedido arranca en 100 puntos: rinde más quien diagnostica con menos pasos.</li>
@@ -68,9 +87,10 @@
   <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:300px;border:0;margin-right:10px">
   <input id="correo" type="email" placeholder="Correo (opcional)" style="font-size:18px;padding:11px 12px;width:300px;border:0"><br>
   <button class="principal" onclick="empezar('Redes')" style="margin-right:10px;margin-top:14px">Guardia de redes</button>
-  <button class="principal" onclick="empezar('Seguridad')">Guardia de seguridad</button>
+  <button class="principal" onclick="empezar('Seguridad')" style="margin-right:10px">Guardia de seguridad</button>
+  <button class="principal" onclick="empezar('Parcial')">Guardia del parcial</button>
   <button class="secundario oculto" id="btnPodio1" onclick="podio()">Ver el podio</button>
-  <p>DS-32 · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
+  <p>3º 2º DS y AF · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
 </section>
 
 <section id="juego" class="oculto">
@@ -107,6 +127,7 @@
   <div class="podio">
     <div><h4>Guardia de redes</h4><ol id="podioRedes"></ol></div>
     <div><h4>Guardia de seguridad</h4><ol id="podioSeguridad"></ol></div>
+    <div><h4>Guardia del parcial</h4><ol id="podioParcial"></ol></div>
   </div>
   <div class="podio" style="grid-template-columns:1fr;margin-top:22px"><div><h4>Jugando ahora</h4><ol id="podioEnCurso"></ol></div></div>
   <p id="podioAviso" style="color:#6B7280;font-size:15px"></p>
@@ -523,6 +544,118 @@ Intentos fallidos previos: 0`,
    cierre: "La auditoría identifica la cuenta y el origen: jperez, por VPN, sin intentos fallidos. La cuenta seguía activa dos meses después de la desvinculación. Falló la administración de cuentas: la baja de accesos debe formar parte del procedimiento de egreso. Gracias a las cuentas individuales pudo atribuirse la acción, y gracias a la copia fuera de línea puede recuperarse." }
 ];
 
+const PARCIAL = [
+ { titulo: "Contabilidad: «veo la impresora, pero no entro a Internet»", clave: "ipconfig", prompt: "C:\\> ",
+   pedido: "Una PC de Contabilidad imprime sin problemas en la impresora de la oficina, pero no abre ninguna página de Internet.",
+   salidas: {
+     "ipconfig": IPCONFIG("192.168.1.25", "255.255.255.0", "", "8.8.8.8", "no"),
+     "ping 192.168.1.50  (la impresora)": OK("192.168.1.50", "<1m", 128),
+     "ping 8.8.8.8": GENERAL("8.8.8.8"),
+     "nslookup www.ejemplo.com": SIN_DNS,
+     "Revisar el cable de red": `El cable está bien conectado y la luz de la placa parpadea.` },
+   opciones: ["Falta cargar la puerta de enlace: la PC no tiene a quién darle lo que va afuera.", "La impresora está ocupando la conexión.", "El cable está roto.", "El servidor DNS está caído."], ok: 0,
+   cierre: "La PC tiene dirección y máscara, pero el casillero de la puerta de enlace está vacío. Por eso habla con los equipos de su red (la impresora responde), pero no tiene a quién entregarle lo que va a Internet. Se arregla cargando la dirección del router, por ejemplo 192.168.1.1." },
+ { titulo: "Ventas y Administración: «no nos vemos»", clave: "ipconfig en las dos PC", prompt: "C:\\> ",
+   pedido: "Pusieron una PC de Ventas y una de Administración en el mismo switch, pero no se pueden pasar archivos entre ellas.",
+   salidas: {
+     "ipconfig en la PC de Ventas": IPCONFIG("192.168.1.10", "255.255.255.0", "", "", "no"),
+     "ipconfig en la PC de Administración": IPCONFIG("192.168.2.10", "255.255.255.0", "", "", "no"),
+     "ping 192.168.2.10  (desde Ventas)": GENERAL("192.168.2.10"),
+     "Mirar las luces del switch": `Los dos puertos están en verde: hay enlace.`,
+     "Revisar los cables": `Dos cables directos, bien conectados.` },
+   opciones: ["Están en redes distintas: hace falta un router (o poner las dos en la misma red).", "El switch está roto.", "Falta un cable cruzado entre las PC.", "El DNS no resuelve los nombres de las PC."], ok: 0,
+   cierre: "Una PC está en la red 192.168.1 y la otra en la 192.168.2. El switch las conecta «por cable», pero solo une equipos de una misma red. Para comunicar dos redes distintas hace falta un router, que es la puerta entre las dos." },
+ { titulo: "Sistema de turnos: «alguien entró sin contraseña»", clave: "el registro del login", prompt: "> ",
+   pedido: "En el sistema de turnos de una clínica apareció alguien conectado como administrador. Nadie le pasó la contraseña.",
+   salidas: {
+     "Ver el registro de ingresos": `15/10 02:14  usuario escrito: admin' --    contraseña escrita: x    resultado: INGRESÓ`,
+     "Ver cómo arma el programa la consulta": `consulta = "SELECT * FROM usuarios WHERE user = '" + usuario + "' AND pass = '" + clave + "'"`,
+     "Ver el certificado HTTPS del sitio": `Válido · el navegador muestra el candado`,
+     "Analizar el servidor con el antivirus": `Sin amenazas detectadas.`,
+     "Ver la contraseña del administrador": `Larga, con números y símbolos. No figura en filtraciones conocidas.` },
+   opciones: ["Inyección SQL: se arregla con consultas parametrizadas.", "La contraseña del administrador era débil.", "El certificado HTTPS está vencido.", "El servidor tiene un virus."], ok: 0,
+   cierre: "En el usuario escribieron admin' --. El programa pega eso dentro de la pregunta a la base de datos, y el -- hace que se ignore todo lo que sigue, incluida la contraseña. No hizo falta adivinar nada. El candado no ayuda: cifra el viaje, pero el ataque llega igual. La solución es que el programa trate lo escrito siempre como un dato, nunca como una orden (consultas parametrizadas)." },
+ { titulo: "Página web nueva: «desde afuera no abre»", clave: "las reglas del firewall", prompt: "> ",
+   pedido: "Instalaron el servidor de la nueva página web. Desde la oficina se ve, pero desde Internet no abre.",
+   salidas: {
+     "Ver las reglas del firewall": `Política de base: BLOQUEAR TODO (default-deny)
+Regla 1: permitir 22/TCP solo desde 203.0.113.10 (el administrador)`,
+     "Test-NetConnection web.oficina.example -Port 443  (desde afuera)": PUERTO2("web.oficina.example", 443, "False", "False"),
+     "Ver si el servicio web está andando": `Servicio web: EN EJECUCIÓN · escuchando en el puerto 443`,
+     "nslookup web.oficina.example": `Nombre:   web.oficina.example
+Address:  198.51.100.20`,
+     "Reiniciar el servidor": `El servidor se reinició. Sigue sin abrir desde afuera.` },
+   opciones: ["El firewall bloquea todo y nadie habilitó el 443.", "El servicio web está apagado.", "El DNS apunta a otra dirección.", "Hay que reiniciar el router."], ok: 0,
+   cierre: "El firewall es el portero, y con default-deny la regla de base es «no pasa nadie»: solo entra lo que está en la lista. En la lista solo está el 22 para el administrador. El servicio anda y el nombre resuelve bien: falta agregar «permitir 443» para que la página se vea desde afuera." },
+ { titulo: "Administración: «no salen los mails»", clave: "probar el puerto 25", prompt: "C:\\> ",
+   pedido: "Desde la oficina se navega bien, pero los correos que se mandan quedan en la bandeja de salida.",
+   salidas: {
+     "ping 8.8.8.8": OK("8.8.8.8", "=18ms", 117),
+     "Test-NetConnection www.ejemplo.com -Port 443": PUERTO2("www.ejemplo.com", 443, "True", "True"),
+     "Test-NetConnection smtp.correo.example -Port 25": PUERTO2("smtp.correo.example", 25, "True", "False"),
+     "Ver las reglas del firewall de salida": `Regla 4: BLOQUEAR salida 25/TCP   (agregada ayer: «cerrar puertos que no se usan»)`,
+     "nslookup smtp.correo.example": `Nombre:   smtp.correo.example
+Address:  198.51.100.25` },
+   opciones: ["Ayer bloquearon en el firewall el puerto 25, que es el de envío de correo.", "No hay Internet en la oficina.", "El DNS no encuentra el servidor de correo.", "El puerto 443 está cerrado."], ok: 0,
+   cierre: "Cada servicio entra por su «número de departamento»: las páginas seguras por el 443, el envío de mails por el 25. La web anda, así que hay Internet. Lo que falla es la 25: alguien la cerró ayer creyendo que no se usaba. Hay que volver a permitirla." },
+ { titulo: "Packet Tracer: «el primer ping falla y después anda»", clave: "el modo Simulation", prompt: "PC> ",
+   pedido: "En el laboratorio, el primer ping entre dos PC de la misma red pierde una respuesta. Los siguientes salen perfectos.",
+   salidas: {
+     "ping 192.168.1.20  (el primero)": `Request timed out.
+Reply from 192.168.1.20: bytes=32 time<1ms TTL=128
+Reply from 192.168.1.20: bytes=32 time<1ms TTL=128
+Reply from 192.168.1.20: bytes=32 time<1ms TTL=128`,
+     "ping 192.168.1.20  (el segundo)": `Reply from 192.168.1.20: bytes=32 time<1ms TTL=128  (las cuatro respuestas)`,
+     "arp -a  (antes del primer ping)": `No ARP Entries Found`,
+     "arp -a  (después)": `192.168.1.20    00e0.f7a1.3c02    dynamic`,
+     "Ver el modo Simulation": `1) ARP  · de la PC a TODOS: «¿quién tiene 192.168.1.20?»
+2) ARP  · de 192.168.1.20: «soy yo, mi MAC es 00e0.f7a1.3c02»
+3) ICMP · recién ahora sale el ping` },
+   opciones: ["Es normal: la PC primero pregunta con ARP de quién es esa IP, y después se lo anota.", "El cable está flojo.", "El switch está saturado.", "La otra PC tiene un firewall."], ok: 0,
+   cierre: "Para entregar algo dentro de la red, la PC necesita la dirección física (MAC) del destino, y solo sabe su IP. Entonces pregunta a todos «¿quién tiene esta IP?» y contesta solo el dueño. Mientras pregunta, el primer ping espera. Después se lo anota (arp -a) y los siguientes salen directo." },
+ { titulo: "Depósito: «le puse la .255 a la PC nueva»", clave: "ipconfig", prompt: "C:\\> ",
+   pedido: "En el depósito configuraron a mano una PC nueva en la red 192.168.1.0/24 y no se comunica con nadie.",
+   salidas: {
+     "ipconfig": IPCONFIG("192.168.1.255", "255.255.255.0", "192.168.1.1", "8.8.8.8", "no"),
+     "ping 192.168.1.1": GENERAL("192.168.1.1"),
+     "Ver el aviso de Windows al guardar la IP": `La dirección IP 192.168.1.255 no es válida para un equipo en esta red.`,
+     "Ver la lista de IP ocupadas": `Usadas: .1 (router), .10 a .40 (PC), .50 (impresora). Libres: .41 a .49 y .51 a .254` },
+   opciones: ["La .255 es la dirección de difusión: no se le puede dar a un equipo. Hay que usar una libre, como la .41.", "Falta la puerta de enlace.", "La máscara tendría que ser 255.255.0.0.", "El router está apagado."], ok: 0,
+   cierre: "En una red /24 hay dos direcciones que no son para equipos: la primera (.0) es el nombre de la red y la última (.255) es para avisarle a todos a la vez. Quedan de la .1 a la .254. Con una libre, como la .41, la PC funciona." },
+ { titulo: "Router: «anoche se cortó la red de Ventas»", clave: "el registro (syslog) del router", prompt: "> ",
+   pedido: "A las 23:10 Ventas se quedó sin red. Hoy a la mañana alguien la volvió a levantar. Hay que saber qué pasó.",
+   salidas: {
+     "Gráfico de SNMP del enlace de Ventas": `22:00 ▇▇▇▇ 40 %   23:00 ▇▇▇ 30 %   23:10 ▏ 0 %   …   08:05 ▇▇▇▇ 45 %`,
+     "Registro (syslog) del router": `23:10:04  usuario tecnico2 (10.0.0.33): interface Gi0/1 → shutdown
+08:05:12  usuario admin  (10.0.0.10): interface Gi0/1 → no shutdown`,
+     "ping 192.168.1.1  (el router)": OK("192.168.1.1", "<1m", 255),
+     "Revisar el cable de Ventas": `Bien conectado.` },
+   opciones: ["La apagó a mano el usuario tecnico2: lo dice el registro.", "Se cortó la luz.", "Se rompió el cable de Ventas.", "El enlace se saturó."], ok: 0,
+   cierre: "Las dos herramientas se complementan. SNMP mide: muestra que a las 23:10 el tráfico cayó a cero (el «cuánto» y el «cuándo»). El registro, syslog, es el diario: dice quién hizo qué. Y como cada uno usa su propio usuario, se sabe que fue tecnico2." },
+ { titulo: "Sueldos: «el archivo llegó cambiado»", clave: "comparar las huellas (hash)", prompt: "> ",
+   pedido: "Contaduría mandó a la sucursal el archivo de sueldos. En la sucursal un importe no coincide con el original.",
+   salidas: {
+     "Huella (hash) del archivo enviado": `a91f 03c2 77e0 1b4d …`,
+     "Huella (hash) del archivo recibido": `5d08 e6a1 c3f9 902e …   ← distinta`,
+     "Ver por dónde viajó": `FTP, puerto 21: sin cifrar y sin ningún control`,
+     "Ver si el servidor estuvo caído": `Funcionó todo el día sin cortes.`,
+     "Ver si alguien más lo leyó": `No hay datos: por FTP no queda registro.` },
+   opciones: ["Falló la integridad: el archivo se modificó en el camino.", "Falló la disponibilidad.", "Falló la confidencialidad.", "Es un error de la planilla original."], ok: 0,
+   cierre: "La huella (hash) es como una firma del contenido: si cambia una sola coma, cambia la huella. Las dos no coinciden, así que el archivo se modificó en el camino. Eso es integridad. Viajó por FTP, sin cifrar y sin control. Hay que mandarlo por un medio cifrado (por ejemplo SFTP o HTTPS) y comparar la huella al recibirlo." },
+ { titulo: "Gerencia: «me llegó un código que no pedí»", clave: "el registro de ingresos", prompt: "> ",
+   pedido: "A la gerente le llegó al celular un código de verificación a las 3 de la mañana. Ella estaba durmiendo.",
+   salidas: {
+     "Ver el registro de ingresos de su cuenta": `03:02  contraseña CORRECTA  desde 203.0.113.80 (otro país)
+03:02  código del celular: INCORRECTO
+03:03  código del celular: INCORRECTO
+03:03  código del celular: INCORRECTO → acceso bloqueado`,
+     "Buscar su correo en filtraciones": `Aparece en la filtración de una tienda online (2025).`,
+     "Preguntarle si usa la misma contraseña en otros sitios": `«Sí, uso la misma para casi todo.»`,
+     "Analizar su PC con el antivirus": `Sin amenazas detectadas.` },
+   opciones: ["Tenían su contraseña, pero el doble factor los frenó: les faltaba el celular. Hay que cambiar la contraseña.", "Entraron a la cuenta y hay que avisar a todos.", "El celular de la gerente tiene un virus.", "Fue un error del sistema: no pasó nada."], ok: 0,
+   cierre: "La contraseña se filtró en otra página y la gerente la usaba en todos lados. El atacante la tenía, pero el sistema pide además algo que ella tiene: el código del celular. Sin eso no pudo entrar. Contraseña (algo que sabés) + celular (algo que tenés) es doble factor. Igual hay que cambiar la contraseña y no repetirla." }
+];
+
 const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
 function podio() {
   ["inicio", "juego", "final"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
@@ -533,7 +666,7 @@ function podio() {
       enCurso.sort((a, b) => a.haceMin - b.haceMin).map(x =>
         `<li><span>${esc(x.nombre)} · guardia de ${esc(String(x.guardia).toLowerCase())}</span><span class="p">resolvió ${esc(x.pedido)} · ${x.total} puntos · hace ${x.haceMin} min</span></li>`).join("") ||
       "<li>Nadie en este momento.</li>";
-    ["Redes", "Seguridad"].forEach(g => {
+    ["Redes", "Seguridad", "Parcial"].forEach(g => {
       const orden = lista.filter(x => x.guardia === g).sort((a, b) => b.total - a.total || a.minutos - b.minutos);
       $("podio" + g).innerHTML = orden.slice(0, 15).map((x, k) =>
         `<li class="${k < 3 ? "top" : ""}"><span>${k + 1}.º &nbsp;${esc(x.nombre)}</span><span class="p">${x.total} · ${x.minutos} min</span></li>`).join("") ||
@@ -544,7 +677,7 @@ function podio() {
   cargarPodio(); setInterval(cargarPodio, 20000);
 }
 if (PODIO_URL) document.addEventListener("DOMContentLoaded", () => { ver("btnPodio1", true); ver("btnPodio2", true); if (location.hash === "#podio") podio(); });
-const MODULOS = { "Redes": REDES, "Seguridad": SEGURIDAD };
+const MODULOS = { "Redes": REDES, "Seguridad": SEGURIDAD, "Parcial": PARCIAL };
 let PEDIDOS = REDES, modulo = "Redes", inicio = 0;
 let i = 0, puntos = 0, total = 0, resuelto = false, resultados = [], alumno = "", correo = "";
 const $ = id => document.getElementById(id);
@@ -583,6 +716,7 @@ function cargar() {
       const t = $("terminal"); const limpio = cmd.replace(/\s+\(.*\)$/, "");
       t.innerHTML += `<span class="c">${esc(limpio)}</span>\n\n${esc(p.salidas[cmd])}\n\n${esc(pr)}`;
       t.scrollTop = t.scrollHeight; marcador();
+      if (window.innerWidth <= 760) t.scrollIntoView({ block: "nearest", behavior: "smooth" });
     };
     $("comandos").appendChild(b);
   });
@@ -619,7 +753,7 @@ function siguiente() {
   fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
-  $("comprobante").textContent = `Guardia de ${modulo.toLowerCase()} · ${alumno} · ${resultados.join(" + ")} = ${total} de ${maximo} · ${rango} · ${new Date().toLocaleString("es-AR")}`;
+  $("comprobante").textContent = `Guardia ${modulo === "Parcial" ? "del parcial" : "de " + modulo.toLowerCase()} · ${alumno} · ${resultados.join(" + ")} = ${total} de ${maximo} · ${rango} · ${new Date().toLocaleString("es-AR")}`;
 }
 </script>
 </body>
