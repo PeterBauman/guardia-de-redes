@@ -99,7 +99,7 @@
     main { padding:12px 10px calc(32px + env(safe-area-inset-bottom)); }
     main > section:not(.portada) { padding:16px 14px; border-radius:14px; }
     .portada { border-left:0; border-top:6px solid var(--naranja); }
-    .diag #siguiente, .diag #eSiguiente, .diag #eCorregir { position:sticky; bottom:calc(10px + env(safe-area-inset-bottom)); width:100%; display:block; box-shadow:0 4px 14px rgba(11,37,69,.25); font-size:18px; padding:15px; }
+    .diag #siguiente, .diag #eSiguiente, .diag #eCorregir { position:sticky; bottom:calc(10px + env(safe-area-inset-bottom)); width:100%; display:block; box-shadow:0 4px 14px rgba(11,37,69,.25); font-size:18px; padding:15px; text-align:center; }
     .diag #siguiente.oculto, .diag #eSiguiente.oculto, .diag #eCorregir.oculto { display:none; }
   }
   .examen-ia { background:#fff; color:#1A1A1A; border-radius:14px; padding:18px 20px; margin:16px 0 6px; max-width:640px; border:3px solid var(--celeste); }
@@ -108,6 +108,25 @@
   .examen-ia p { color:#374151; font-size:16px; margin:0 0 12px; line-height:1.45; }
   .examen-ia .principal { background:var(--celeste); color:var(--marino); margin:0; }
   .portada .o-jugar { color:#C5D3E0; font-size:15px; margin:14px 0 0; }
+  .reglas summary { cursor:pointer; color:var(--celeste); font-weight:bold; font-size:16px; margin:6px 0; list-style:none; }
+  .reglas summary::-webkit-details-marker { display:none; }
+  .reglas summary::before { content:"▸ "; }
+  .reglas[open] summary::before { content:"▾ "; }
+  @media (max-width: 760px) {
+    .portada { padding:22px 16px 26px; }
+    .portada small { font-size:11px; }
+    .portada h1 { font-size:28px; margin:8px 0 0; }
+    .portada h2 { font-size:20px; margin:2px 0 14px; color:var(--naranja); }
+    .portada ol { font-size:15px; line-height:1.5; }
+    .portada input { font-size:17px !important; padding:13px 14px !important; }
+    .examen-ia { padding:16px; margin-top:12px; }
+    .examen-ia b { font-size:20px; }
+    .examen-ia p { font-size:15px; }
+    .portada .principal { padding:15px; font-size:17px; }
+    .portada > p:last-child { font-size:12px; margin-top:22px; }
+    #escrita textarea { font-size:17px; min-height:180px; }
+    #escrita h3, #juego h3 { line-height:1.25; }
+  }
 </style>
 </head>
 <body>
@@ -130,12 +149,15 @@
   <small>REDES Y COMUNICACIONES · DIAGNÓSTICO Y SEGURIDAD</small>
   <h1>Guardia de redes</h1>
   <h2>Pedidos de soporte</h2>
+  <details class="reglas" id="reglas" open>
+    <summary>¿Cómo se juegan las guardias?</summary>
   <ol>
     <li>Llega un pedido de soporte de una oficina. Hay tres guardias de diez pedidos: redes, seguridad y la del parcial.</li>
     <li>Se elige qué comando o revisión ejecutar y se lee el resultado. Cada paso cuesta 10 puntos.</li>
     <li>Cuando la causa está clara, se elige el diagnóstico. Un diagnóstico equivocado cuesta 30 puntos.</li>
     <li>Cada pedido arranca en 100 puntos: rinde más quien diagnostica con menos pasos.</li>
   </ol>
+  </details>
   <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:300px;border:0;margin-right:10px">
   <input id="correo" type="email" placeholder="Correo (opcional)" style="font-size:18px;padding:11px 12px;width:300px;border:0"><br>
   <div class="examen-ia">
@@ -185,7 +207,7 @@
   <div class="etiqueta" id="eNumero"></div>
   <h3 id="eConsigna"></h3>
   <p class="pedido">Respondé con tus palabras, como en el parcial. No hace falta que sea largo: alcanza con que se entienda la idea. Al tocar «Corregir», la IA te pone un puntaje de 0 a 10 y te explica qué faltó.</p>
-  <textarea id="eRespuesta" rows="7" maxlength="2000" style="width:100%;font-size:17px;padding:12px;border:1.5px solid var(--marino);font-family:inherit"></textarea>
+  <textarea id="eRespuesta" rows="7" maxlength="2000" placeholder="Escribí tu respuesta acá…" style="width:100%;font-size:17px;padding:12px;border:1.5px solid var(--marino);font-family:inherit"></textarea>
   <div class="diag">
     <button class="principal" id="eCorregir" onclick="corregirEscrita()">Corregir</button>
     <div class="cierre oculto" id="eDevolucion"></div>
@@ -837,7 +859,7 @@ function irAlExamen() {
   if (!CON_IA) { location.href = "https://guardian.nilosolutions.com/#examen"; return; }
   empezarEscrita();
 }
-document.addEventListener("DOMContentLoaded", () => { if (location.hash === "#examen") $("nombre").focus(); });
+document.addEventListener("DOMContentLoaded", () => { if (window.innerWidth <= 760) $("reglas").removeAttribute("open"); if (location.hash === "#examen") $("nombre").focus(); });
 async function empezarEscrita() {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
   if (!alumno) { $("nombre").focus(); return; }
