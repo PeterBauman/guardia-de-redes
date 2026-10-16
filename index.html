@@ -127,6 +127,26 @@
     #escrita textarea { font-size:17px; min-height:180px; }
     #escrita h3, #juego h3 { line-height:1.25; }
   }
+  #encabezadoImpresion { display:none; }
+  @media print {
+    @page { size:A4; margin:16mm; }
+    header, #inicio, #juego, #escrita, #podio, .confirmar,
+    #aviso, #cierreJuego, #final button, .etiqueta,
+    #rango, #tabla { display:none !important; }
+    body { background:#fff; margin:0; }
+    main, section, #final { max-width:none !important; margin:0 !important; padding:0 !important;
+      border:0 !important; border-radius:0 !important; box-shadow:none !important; background:#fff !important; }
+    #repaso h3 { margin-top:0 !important; margin-bottom:8px !important; }
+    #repaso > div { margin-bottom:13px !important; }
+    #encabezadoImpresion { margin-bottom:10px !important; }
+    #comprobante { margin:10px 0 0 !important; page-break-before:avoid; }
+    #final { display:block !important; }
+    #encabezadoImpresion { display:block; margin:0 0 18px; }
+    #repaso > div { page-break-inside:avoid; break-inside:avoid; }
+    .soloPantalla { display:none !important; }
+    #comprobante { background:none !important; padding:0 !important; font-size:12px; color:#555; }
+    a[href]:after { content:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -191,14 +211,17 @@
 </section>
 
 <section id="final" class="oculto">
-  <div class="etiqueta">Cierre de la guardia</div>
+  <div class="etiqueta" id="etiquetaFinal">Cierre de la guardia</div>
+  <div id="encabezadoImpresion"></div>
   <h3 id="rango">Resultado</h3>
   <table id="tabla"></table>
+  <div id="repaso" class="oculto"></div>
   <p id="comprobante" style="font-family:Menlo,Consolas,monospace;font-size:17px;background:#EEF1F5;padding:12px 14px"></p>
   <p id="aviso" style="color:#6B7280;font-size:15px">Registrando el resultado…</p>
-  <div class="cierre">
+  <div class="cierre" id="cierreJuego">
     La columna «Con qué se veía» indica el paso que alcanzaba para llegar al diagnóstico. Sirve de guía para la puesta en común.
   </div>
+  <button class="principal oculto" id="btnDescargar" onclick="window.print()">Descargar en PDF</button>
   <button class="principal oculto" id="btnPodio2" onclick="podio()">Ver el podio</button>
   <button class="principal" onclick="salir()" style="margin-left:10px">Volver al inicio</button>
 </section>
@@ -843,6 +866,8 @@ function siguiente() {
   $("rango").textContent = `${rango} · ${total} de ${maximo} puntos · ${minutos} min`;
   $("tabla").innerHTML = "<tr><th>Pedido</th><th>Puntos</th><th>Con qué se veía</th></tr>" +
     PEDIDOS.map((p, k) => `<tr><td>${k + 1}. ${esc(p.titulo)}</td><td>${resultados[k]}</td><td>${esc(p.clave)}</td></tr>`).join("");
+  ver("repaso", false); ver("cierreJuego", true); ver("btnDescargar", false);
+  $("etiquetaFinal").textContent = "Cierre de la guardia";
   $("marcador").innerHTML = `Total: <b>${total}</b>`;
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
     "entry.1812026381": `${modulo} | ${resultados.join(" + ")} | ${rango} | ${minutos} min | ${correo || "sin correo"}` });
@@ -854,7 +879,7 @@ function siguiente() {
 
 // ---- Guardia escrita: corrige la IA (solo en guardian.nilosolutions.com) ----
 const CON_IA = !location.hostname.endsWith("github.io") && location.protocol !== "file:";
-let EPREG = [], ei = 0, epuntos = [];
+let EPREG = [], ei = 0, epuntos = [], erespuestas = [], edevoluciones = [];
 function irAlExamen() {
   if (!CON_IA) { location.href = "https://guardian.nilosolutions.com/#examen"; return; }
   empezarEscrita();
@@ -863,7 +888,7 @@ document.addEventListener("DOMContentLoaded", () => { if (window.innerWidth <= 7
 async function empezarEscrita() {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
   if (!alumno) { $("nombre").focus(); return; }
-  modulo = "Escrita"; inicio = Date.now(); ei = 0; epuntos = [];
+  modulo = "Escrita"; inicio = Date.now(); ei = 0; epuntos = []; erespuestas = []; edevoluciones = [];
   try { EPREG = await fetch("/api/preguntas").then(r => r.json()); } catch (e) { alert("No se pudieron cargar las preguntas."); return; }
   ver("inicio", false); ver("escrita", true); entrarPantalla(); cargarEscrita(); avisarEscrita(0);
 }
@@ -891,7 +916,7 @@ async function corregirEscrita() {
       body: JSON.stringify({ pregunta: EPREG[ei].id, respuesta }) });
     const d = await r.json();
     if (!r.ok || d.error) throw new Error(d.error || "La corrección falló.");
-    epuntos.push(d.puntaje);
+    epuntos.push(d.puntaje); erespuestas.push(respuesta); edevoluciones.push(d.devolucion);
     guardarRespuesta(ei + 1, EPREG[ei].consigna, respuesta, d.puntaje, d.devolucion);
     $("eDevolucion").innerHTML = `<b>${d.puntaje} de 10.</b> ${esc(d.devolucion)}`; ver("eDevolucion", true);
     ver("eCorregir", false);
@@ -918,13 +943,47 @@ function siguienteEscrita() {
   $("rango").textContent = `Nota: ${String(nota).replace(".", ",")} · ${minutos} min`;
   $("tabla").innerHTML = "<tr><th>Pregunta</th><th>Puntaje</th></tr>" +
     EPREG.map((q, k) => `<tr><td>${k + 1}. ${esc(q.consigna)}</td><td>${epuntos[k]} de 10</td></tr>`).join("");
+  ver("cierreJuego", false);
+  $("repaso").innerHTML = "<h3 style='margin:26px 0 4px'>Tu examen corregido</h3>" +
+    "<p style='color:#6B7280;font-size:15px;margin:0 0 16px' class='soloPantalla'>Cada pregunta con lo que escribiste y la corrección. Tocá «Descargar en PDF» para guardarlo: al volver al inicio se borra.</p>" +
+    EPREG.map((q, k) => `<div style="margin:0 0 20px">
+      <div style="font-weight:700;margin-bottom:5px">${k + 1}. ${esc(q.consigna)}</div>
+      <div style="margin:0 0 7px;padding-left:12px;border-left:3px solid #C7D2DE">${esc(erespuestas[k] || "")}</div>
+      <div style="background:#EEF1F5;padding:8px 11px">
+        <b>Corrección — ${epuntos[k]} de 10.</b> ${esc(edevoluciones[k] || "")}
+      </div>
+    </div>`).join("");
+  $("encabezadoImpresion").innerHTML =
+    `<div style="border-bottom:2px solid #333;padding-bottom:10px">
+       <div style="font-size:20px;font-weight:700">Examen de práctica · Redes y Comunicaciones</div>
+       <div style="font-size:13px;color:#444;margin-top:3px">3º 2º · Instituto Urquiza · 2º cuatrimestre 2026</div>
+       <table style="width:100%;margin-top:12px;border:none;font-size:14px">
+         <tr>
+           <td style="border:none;padding:0">
+             <b>Alumno:</b> ${esc(alumno)}<br>
+             <b>Fecha:</b> ${new Date().toLocaleDateString("es-AR")} · ${minutos} min
+           </td>
+           <td style="border:none;padding:0;text-align:right;vertical-align:top">
+             <div style="display:inline-block;border:2px solid #333;padding:6px 18px">
+               <div style="font-size:11px;letter-spacing:.08em">NOTA</div>
+               <div style="font-size:26px;font-weight:700;line-height:1.1">${String(nota).replace(".", ",")}</div>
+             </div>
+           </td>
+         </tr>
+       </table>
+     </div>
+     <div style="font-size:12px;color:#555;margin-top:8px">
+       Examen de práctica. La corrección es automática y no reemplaza la nota del parcial.
+     </div>`;
+  $("etiquetaFinal").textContent = "Examen corregido";
+  ver("repaso", true); ver("btnDescargar", true);
   $("marcador").innerHTML = `Nota: <b>${String(nota).replace(".", ",")}</b>`;
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(nota),
     "entry.1812026381": `Escrita | ${epuntos.join(" + ")} | nota ${nota} | ${minutos} min | ${correo || "sin correo"}` });
   fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: mostrale esta pantalla al profesor."; });
-  $("comprobante").textContent = `Examen de práctica · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR")}`;
+  $("comprobante").textContent = `Examen de práctica · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR", { hour12:false })}`;
 }
 
 // ---- volver / salir ----
@@ -935,7 +994,7 @@ function pedirSalir() { if (enJuego()) ver("confirmar", true); else salir(); }
 function cerrarConfirmar() { ver("confirmar", false); }
 function salir() {
   ver("confirmar", false);
-  i = 0; puntos = 0; total = 0; resuelto = false; resultados = []; ei = 0; epuntos = [];
+  i = 0; puntos = 0; total = 0; resuelto = false; resultados = []; ei = 0; epuntos = []; erespuestas = []; edevoluciones = [];
   PANTALLAS.forEach(x => ver(x, x === "inicio")); mostrarVolver(false);
   $("marcador").innerHTML = ""; window.scrollTo(0, 0);
   if (history.state && history.state.guardia) history.back();
