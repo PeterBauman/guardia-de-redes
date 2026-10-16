@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Guardia de redes</title>
 <style>
   :root { --marino:#0B2545; --naranja:#FB923C; --celeste:#00C2D7; --gris:#6B7280; --raya:#DDE1E6; }
@@ -65,13 +67,57 @@
     .podio { grid-template-columns:1fr; gap:18px; }
     .podio li { font-size:15px; } .podio li.top { font-size:17px; }
   }
+
+  /* ---- navegación y aspecto de app ---- */
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background:#F4F6F9; }
+  header { position:sticky; top:0; z-index:50; background:#fff; align-items:center; gap:14px; }
+  header .marca { flex:1; }
+  .volver { background:none; border:0; color:var(--marino); font-weight:bold; font-size:17px; padding:6px 10px 6px 0; }
+  main > section:not(.portada) { background:#fff; border-radius:16px; padding:22px 24px; box-shadow:0 1px 3px rgba(11,37,69,.08); }
+  .portada { border-radius:16px; }
+  .principal { border-radius:12px; }
+  .secundario { border-radius:12px; }
+  .comandos button, .diag button { border-radius:12px; }
+  .terminal { border-radius:12px; }
+  .cierre { border-radius:0 12px 12px 0; background:#FFF8F1; }
+  textarea { border-radius:12px; }
+  input { border-radius:10px; }
+  button:active { transform:scale(.98); }
+  .confirmar { position:fixed; inset:0; z-index:100; background:rgba(11,37,69,.45); display:flex; align-items:flex-end; justify-content:center; }
+  .confirmar.oculto { display:none; }
+  .confirmar .hoja { background:#fff; width:100%; max-width:520px; border-radius:20px 20px 0 0; padding:22px 20px calc(22px + env(safe-area-inset-bottom)); }
+  .confirmar .hoja b { font-size:20px; color:var(--marino); }
+  .confirmar .hoja p { color:var(--gris); font-size:16px; margin:8px 0 16px; }
+  .confirmar .hoja button { display:block; width:100%; font-size:17px; padding:14px; margin-top:8px; }
+  .confirmar .salir { background:#fff; border:1.5px solid #B91C1C; color:#B91C1C; font-weight:bold; border-radius:12px; }
+  @media (min-width: 761px) { .confirmar { align-items:center; } .confirmar .hoja { border-radius:20px; } }
+  @media (max-width: 760px) {
+    header { flex-direction:row; padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top)); font-size:13px; }
+    header .marca { display:none; }
+    header .marcador { flex:1; text-align:right; font-size:13px; }
+    header .marcador b { font-size:17px; }
+    main { padding:12px 10px calc(32px + env(safe-area-inset-bottom)); }
+    main > section:not(.portada) { padding:16px 14px; border-radius:14px; }
+    .portada { border-left:0; border-top:6px solid var(--naranja); }
+    .diag #siguiente, .diag #eSiguiente, .diag #eCorregir { position:sticky; bottom:calc(10px + env(safe-area-inset-bottom)); width:100%; display:block; box-shadow:0 4px 14px rgba(11,37,69,.25); font-size:18px; padding:15px; }
+    .diag #siguiente.oculto, .diag #eSiguiente.oculto, .diag #eCorregir.oculto { display:none; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <span>Guardia de redes · 3º 2º DS y AF · Instituto Urquiza</span>
+  <button class="volver oculto" id="btnVolver" onclick="pedirSalir()" aria-label="Volver al inicio">‹ Inicio</button>
+  <span class="marca">Guardia de redes · 3º 2º DS y AF · Instituto Urquiza</span>
   <span class="marcador" id="marcador"></span>
 </header>
+<div class="confirmar oculto" id="confirmar">
+  <div class="hoja">
+    <b>¿Volver al inicio?</b>
+    <p>Se pierde lo que llevás de esta guardia. Podés volver a empezarla cuando quieras.</p>
+    <button class="principal" onclick="cerrarConfirmar()">Seguir jugando</button>
+    <button class="salir" onclick="salir()">Volver al inicio</button>
+  </div>
+</div>
 <main>
 
 <section id="inicio" class="portada">
@@ -120,6 +166,7 @@
     La columna «Con qué se veía» indica el paso que alcanzaba para llegar al diagnóstico. Sirve de guía para la puesta en común.
   </div>
   <button class="principal oculto" id="btnPodio2" onclick="podio()">Ver el podio</button>
+  <button class="principal" onclick="salir()" style="margin-left:10px">Volver al inicio</button>
 </section>
 
 <section id="escrita" class="oculto">
@@ -670,7 +717,7 @@ Reply from 192.168.1.20: bytes=32 time<1ms TTL=128`,
 
 const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
 function podio() {
-  ["inicio", "juego", "final", "escrita"].forEach(x => ver(x, false)); ver("podio", true); window.scrollTo(0, 0);
+  ["inicio", "juego", "final", "escrita"].forEach(x => ver(x, false)); ver("podio", true); entrarPantalla(); window.scrollTo(0, 0);
   const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(datos => {
     const lista = Array.isArray(datos) ? datos : datos.podio;
     const enCurso = Array.isArray(datos) ? null : datos.enCurso;
@@ -686,7 +733,7 @@ function podio() {
     });
     $("podioAviso").textContent = "Actualizado " + new Date().toLocaleTimeString("es-AR") + ". Con igual puntaje, va primero quien tardó menos.";
   }).catch(() => { $("podioAviso").textContent = "No se pudo leer el podio."; });
-  cargarPodio(); setInterval(cargarPodio, 20000);
+  cargarPodio(); clearInterval(window.__podioTimer); window.__podioTimer = setInterval(cargarPodio, 20000);
 }
 if (PODIO_URL) document.addEventListener("DOMContentLoaded", () => { ver("btnPodio1", true); ver("btnPodio2", true); if (location.hash === "#podio") podio(); });
 const MODULOS = { "Redes": REDES, "Seguridad": SEGURIDAD, "Parcial": PARCIAL };
@@ -698,7 +745,10 @@ const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(
 const mezclar = a => { for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; };
 
 function marcador() {
-  $("marcador").innerHTML = `${esc(modulo)} · pedido ${Math.min(i + 1, PEDIDOS.length)} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
+  const n = Math.min(i + 1, PEDIDOS.length);
+  $("marcador").innerHTML = window.innerWidth <= 760
+    ? `Pedido ${n}/${PEDIDOS.length} · <b>${total + (resuelto ? 0 : puntos)}</b> pts`
+    : `${esc(modulo)} · pedido ${n} de ${PEDIDOS.length} · este pedido: <b>${puntos}</b> · total: <b>${total}</b>`;
 }
 const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe7i0YQHAopwFdJs61ouA5qKPj_RCu-dH8WuwN9CIdjI1USqA/formResponse";
 function avisar(n) {
@@ -711,7 +761,7 @@ function empezar(m) {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
   if (!alumno) { $("nombre").focus(); return; }
   modulo = m; PEDIDOS = MODULOS[m]; inicio = Date.now();
-  ver("inicio", false); ver("juego", true); cargar(); avisar(0);
+  ver("inicio", false); ver("juego", true); entrarPantalla(); cargar(); avisar(0);
 }
 function cargar() {
   const p = PEDIDOS[i]; const pr = p.prompt || "C:\\> "; puntos = 100; resuelto = false;
@@ -777,7 +827,7 @@ async function empezarEscrita() {
   if (!alumno) { $("nombre").focus(); return; }
   modulo = "Escrita"; inicio = Date.now(); ei = 0; epuntos = [];
   try { EPREG = await fetch("/api/preguntas").then(r => r.json()); } catch (e) { alert("No se pudieron cargar las preguntas."); return; }
-  ver("inicio", false); ver("escrita", true); cargarEscrita(); avisarEscrita(0);
+  ver("inicio", false); ver("escrita", true); entrarPantalla(); cargarEscrita(); avisarEscrita(0);
 }
 function avisarEscrita(n) {
   const minutos = Math.max(0, Math.round((Date.now() - inicio) / 60000));
@@ -792,7 +842,7 @@ function cargarEscrita() {
   $("eRespuesta").value = ""; $("eRespuesta").disabled = false;
   $("eCorregir").disabled = false; $("eCorregir").textContent = "Corregir"; ver("eCorregir", true);
   ver("eDevolucion", false); ver("eSiguiente", false);
-  $("marcador").innerHTML = `Escrita · pregunta ${ei + 1} de ${EPREG.length}`;
+  $("marcador").innerHTML = `Pregunta ${ei + 1}/${EPREG.length}`;
 }
 async function corregirEscrita() {
   const respuesta = $("eRespuesta").value.trim();
@@ -830,6 +880,27 @@ function siguienteEscrita() {
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: mostrale esta pantalla al profesor."; });
   $("comprobante").textContent = `Guardia escrita · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR")}`;
 }
+
+// ---- volver / salir ----
+const PANTALLAS = ["inicio", "juego", "final", "escrita", "podio"];
+function mostrarVolver(si) { ver("btnVolver", si); }
+function enJuego() { return !$("juego").classList.contains("oculto") || !$("escrita").classList.contains("oculto"); }
+function pedirSalir() { if (enJuego()) ver("confirmar", true); else salir(); }
+function cerrarConfirmar() { ver("confirmar", false); }
+function salir() {
+  ver("confirmar", false);
+  i = 0; puntos = 0; total = 0; resuelto = false; resultados = []; ei = 0; epuntos = [];
+  PANTALLAS.forEach(x => ver(x, x === "inicio")); mostrarVolver(false);
+  $("marcador").innerHTML = ""; window.scrollTo(0, 0);
+  if (history.state && history.state.guardia) history.back();
+}
+function entrarPantalla() { mostrarVolver(true); if (!(history.state && history.state.guardia)) history.pushState({ guardia: 1 }, ""); }
+window.addEventListener("popstate", () => {
+  if ($("inicio").classList.contains("oculto")) {
+    if (enJuego()) { history.pushState({ guardia: 1 }, ""); ver("confirmar", true); }
+    else { PANTALLAS.forEach(x => ver(x, x === "inicio")); mostrarVolver(false); $("marcador").innerHTML = ""; }
+  }
+});
 </script>
 </body>
 </html>
