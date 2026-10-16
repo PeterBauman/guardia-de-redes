@@ -102,6 +102,12 @@
     .diag #siguiente, .diag #eSiguiente, .diag #eCorregir { position:sticky; bottom:calc(10px + env(safe-area-inset-bottom)); width:100%; display:block; box-shadow:0 4px 14px rgba(11,37,69,.25); font-size:18px; padding:15px; }
     .diag #siguiente.oculto, .diag #eSiguiente.oculto, .diag #eCorregir.oculto { display:none; }
   }
+  .examen-ia { background:#fff; color:#1A1A1A; border-radius:14px; padding:18px 20px; margin:16px 0 6px; max-width:640px; border:3px solid var(--celeste); }
+  .examen-ia small { color:#0E7490; font-weight:bold; letter-spacing:.5px; font-size:12px; }
+  .examen-ia b { display:block; font-size:22px; color:var(--marino); margin:4px 0 6px; }
+  .examen-ia p { color:#374151; font-size:16px; margin:0 0 12px; line-height:1.45; }
+  .examen-ia .principal { background:var(--celeste); color:var(--marino); margin:0; }
+  .portada .o-jugar { color:#C5D3E0; font-size:15px; margin:14px 0 0; }
 </style>
 </head>
 <body>
@@ -132,10 +138,16 @@
   </ol>
   <input id="nombre" placeholder="Apellido y nombre" style="font-size:18px;padding:11px 12px;width:300px;border:0;margin-right:10px">
   <input id="correo" type="email" placeholder="Correo (opcional)" style="font-size:18px;padding:11px 12px;width:300px;border:0"><br>
+  <div class="examen-ia">
+    <small>NUEVO · PARA PRACTICAR EL PARCIAL</small>
+    <b>Examen de práctica · lo corrige la IA</b>
+    <p>Seis preguntas como las del parcial. Respondés escribiendo, con tus palabras, y la IA te corrige cada una: te pone un puntaje y te explica qué faltó. Al final te da la nota.</p>
+    <button class="principal" id="btnEscrita" onclick="irAlExamen()">Hacer el examen escrito</button>
+  </div>
+  <p class="o-jugar">O jugá una guardia de diagnóstico:</p>
   <button class="principal" onclick="empezar('Redes')" style="margin-right:10px;margin-top:14px">Guardia de redes</button>
   <button class="principal" onclick="empezar('Seguridad')" style="margin-right:10px">Guardia de seguridad</button>
   <button class="principal" onclick="empezar('Parcial')">Guardia del parcial</button>
-  <button class="principal oculto" id="btnEscrita" onclick="empezarEscrita()" style="margin-left:10px">Guardia escrita · corrige la IA</button>
   <button class="secundario oculto" id="btnPodio1" onclick="podio()">Ver el podio</button>
   <p>3º 2º DS y AF · Redes y Comunicaciones · Instituto Urquiza · Prof. Peter Bauman</p>
 </section>
@@ -172,7 +184,7 @@
 <section id="escrita" class="oculto">
   <div class="etiqueta" id="eNumero"></div>
   <h3 id="eConsigna"></h3>
-  <p class="pedido">Respondé con tus palabras. No hace falta que sea largo: alcanza con que se entienda la idea.</p>
+  <p class="pedido">Respondé con tus palabras, como en el parcial. No hace falta que sea largo: alcanza con que se entienda la idea. Al tocar «Corregir», la IA te pone un puntaje de 0 a 10 y te explica qué faltó.</p>
   <textarea id="eRespuesta" rows="7" maxlength="2000" style="width:100%;font-size:17px;padding:12px;border:1.5px solid var(--marino);font-family:inherit"></textarea>
   <div class="diag">
     <button class="principal" id="eCorregir" onclick="corregirEscrita()">Corregir</button>
@@ -821,7 +833,11 @@ function siguiente() {
 // ---- Guardia escrita: corrige la IA (solo en guardian.nilosolutions.com) ----
 const CON_IA = !location.hostname.endsWith("github.io") && location.protocol !== "file:";
 let EPREG = [], ei = 0, epuntos = [];
-if (CON_IA) document.addEventListener("DOMContentLoaded", () => ver("btnEscrita", true));
+function irAlExamen() {
+  if (!CON_IA) { location.href = "https://guardian.nilosolutions.com/#examen"; return; }
+  empezarEscrita();
+}
+document.addEventListener("DOMContentLoaded", () => { if (location.hash === "#examen") $("nombre").focus(); });
 async function empezarEscrita() {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
   if (!alumno) { $("nombre").focus(); return; }
@@ -837,7 +853,7 @@ function avisarEscrita(n) {
 }
 function cargarEscrita() {
   const q = EPREG[ei];
-  $("eNumero").textContent = `Escrita · pregunta ${ei + 1} de ${EPREG.length}`;
+  $("eNumero").textContent = `Examen de práctica · pregunta ${ei + 1} de ${EPREG.length}`;
   $("eConsigna").textContent = q.consigna;
   $("eRespuesta").value = ""; $("eRespuesta").disabled = false;
   $("eCorregir").disabled = false; $("eCorregir").textContent = "Corregir"; ver("eCorregir", true);
@@ -878,7 +894,7 @@ function siguienteEscrita() {
   fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: mostrale esta pantalla al profesor."; });
-  $("comprobante").textContent = `Guardia escrita · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR")}`;
+  $("comprobante").textContent = `Examen de práctica · ${alumno} · ${epuntos.join(" + ")} · nota ${String(nota).replace(".", ",")} · ${new Date().toLocaleString("es-AR")}`;
 }
 
 // ---- volver / salir ----
