@@ -892,6 +892,7 @@ async function corregirEscrita() {
     const d = await r.json();
     if (!r.ok || d.error) throw new Error(d.error || "La corrección falló.");
     epuntos.push(d.puntaje);
+    guardarRespuesta(ei + 1, EPREG[ei].consigna, respuesta, d.puntaje, d.devolucion);
     $("eDevolucion").innerHTML = `<b>${d.puntaje} de 10.</b> ${esc(d.devolucion)}`; ver("eDevolucion", true);
     ver("eCorregir", false);
     $("eSiguiente").textContent = ei + 1 < EPREG.length ? "Siguiente pregunta" : "Ver la nota"; ver("eSiguiente", true);
@@ -900,6 +901,13 @@ async function corregirEscrita() {
     $("eDevolucion").textContent = e.message + " Tocá «Corregir» de nuevo."; ver("eDevolucion", true);
     $("eCorregir").disabled = false; $("eCorregir").textContent = "Corregir"; $("eRespuesta").disabled = false;
   }
+}
+// deja en el formulario lo que escribió el alumno y cómo lo corrigió la IA
+function guardarRespuesta(n, consigna, respuesta, puntaje, devolucion) {
+  const limpio = t => String(t).replace(/[|@]/g, " ").replace(/\s+/g, " ").trim();
+  const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(puntaje),
+    "entry.1812026381": `RESPUESTA | Escrita | pregunta ${n}: ${limpio(consigna)} | RESPONDIÓ: ${limpio(respuesta)} | IA (${puntaje}/10): ${limpio(devolucion)}` });
+  try { fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos }).catch(() => {}); } catch (e) {}
 }
 function siguienteEscrita() {
   ei++;
