@@ -772,7 +772,12 @@ Reply from 192.168.1.20: bytes=32 time<1ms TTL=128`,
    cierre: "La contraseña se filtró en otra página y la gerente la usaba en todos lados. El atacante la tenía, pero el sistema pide además algo que ella tiene: el código del celular. Sin eso no pudo entrar. Contraseña (algo que sabés) + celular (algo que tenés) es doble factor. Igual hay que cambiar la contraseña y no repetirla." }
 ];
 
-const PODIO_URL = "https://script.google.com/macros/s/AKfycbzv9-8IPHiDaX-piHqGJF-7nCwDxvXlPAEYuXDaNP_sRiTbVc2S4JItrL6ruThz0lU/exec";
+// Podio propio en el Worker guardian (16/10): el del Apps Script daba HTTP 500. Desde GitHub Pages se llama al mismo Worker.
+const API = location.hostname === "guardian.nilosolutions.com" || location.hostname === "localhost" ? "" : "https://guardian.nilosolutions.com";
+const PODIO_URL = API + "/api/podio";
+function registrarPodio(d) {
+  try { fetch(API + "/api/registro", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d), keepalive: true }).catch(() => {}); } catch (e) {}
+}
 function podio() {
   ["inicio", "juego", "final", "escrita"].forEach(x => ver(x, false)); ver("podio", true); entrarPantalla(); window.scrollTo(0, 0);
   const cargarPodio = () => fetch(PODIO_URL).then(r => r.json()).then(datos => {
@@ -813,6 +818,7 @@ function avisar(n) {
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
     "entry.1812026381": `AVANCE | ${modulo} | ${n} de ${PEDIDOS.length} | ${minutos} min` });
   try { fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos }).catch(() => {}); } catch (e) {}
+  registrarPodio({ tipo: "avance", nombre: alumno, guardia: modulo, total, minutos, pedido: `${n} de ${PEDIDOS.length}` });
 }
 function empezar(m) {
   alumno = $("nombre").value.trim(); correo = $("correo").value.trim();
@@ -871,6 +877,7 @@ function siguiente() {
   $("marcador").innerHTML = `Total: <b>${total}</b>`;
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(total),
     "entry.1812026381": `${modulo} | ${resultados.join(" + ")} | ${rango} | ${minutos} min | ${correo || "sin correo"}` });
+  registrarPodio({ tipo: "fin", nombre: alumno, guardia: modulo, total, minutos });
   fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos })
     .then(() => { $("aviso").textContent = "El resultado quedó registrado."; })
     .catch(() => { $("aviso").textContent = "No se pudo registrar el resultado: copiar el renglón anterior y pegarlo en el chat de la clase."; });
@@ -897,6 +904,7 @@ function avisarEscrita(n) {
   const datos = new URLSearchParams({ "entry.352670982": alumno, "entry.493028708": String(epuntos.reduce((a, b) => a + b, 0)),
     "entry.1812026381": `AVANCE | Escrita | ${n} de ${EPREG.length} | ${minutos} min` });
   try { fetch(FORM_URL, { method: "POST", mode: "no-cors", body: datos }).catch(() => {}); } catch (e) {}
+  registrarPodio({ tipo: "avance", nombre: alumno, guardia: "Escrita", total: epuntos.reduce((a, b) => a + b, 0), minutos, pedido: `${n} de ${EPREG.length}` });
 }
 function cargarEscrita() {
   const q = EPREG[ei];
